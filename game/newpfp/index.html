@@ -269,7 +269,7 @@
       background: url('/newpfp/assets/arena-bg.png');
       background-size: cover;
       background-position: center 60%;
-      flex: 1; min-height: 420px; max-height: 560px;
+      flex: 1; min-height: 520px; max-height: 680px;
       display: flex; flex-direction: column; overflow: hidden;
     }
     .arena-bg-glow {
@@ -286,13 +286,7 @@
         rgb(var(--bb-primary-rgb) / 0.18) 0%, transparent 70%);
       border-top: 1px solid rgb(var(--bb-primary-rgb) / 0.12);
     }
-    .arena-grid {
-      position: absolute; inset: 0; opacity: .07;
-      background-image:
-        linear-gradient(rgb(var(--bb-primary-rgb) / 1) 1px, transparent 1px),
-        linear-gradient(90deg, rgb(var(--bb-primary-rgb) / 1) 1px, transparent 1px);
-      background-size: 40px 40px;
-    }
+    .arena-grid { display: none; }
     .arena-content {
       position: relative; z-index: 2;
       display: flex; align-items: stretch;
