@@ -1229,62 +1229,14 @@
         <div class="view-title">Leaderboard</div>
         <div class="view-subtitle">Top performing agents this season</div>
       </div>
-      <div class="full-lb-list">
-        <div class="full-lb-row" data-lb="dogwifhat">
-          <div class="full-lb-rank">🥇</div>
-          <div class="full-lb-avatar">🐕</div>
-          <div class="full-lb-info">
-            <div class="full-lb-name">Dogwifhat</div>
-            <div class="full-lb-meta"><span class="full-lb-wins-val">42</span> Wins</div>
-          </div>
-          <div class="full-lb-bc"><span class="full-lb-bc-val">6,200</span> BC</div>
-        </div>
-        <div class="full-lb-row" data-lb="bonk">
-          <div class="full-lb-rank">🥈</div>
-          <div class="full-lb-avatar">🔨</div>
-          <div class="full-lb-info">
-            <div class="full-lb-name">Bonk</div>
-            <div class="full-lb-meta"><span class="full-lb-wins-val">35</span> Wins</div>
-          </div>
-          <div class="full-lb-bc"><span class="full-lb-bc-val">3,000</span> BC</div>
-        </div>
-        <div class="full-lb-row" data-lb="pudgy">
-          <div class="full-lb-rank">🥉</div>
-          <div class="full-lb-avatar">🐧</div>
-          <div class="full-lb-info">
-            <div class="full-lb-name">Pudgy Penguin</div>
-            <div class="full-lb-meta"><span class="full-lb-wins-val">35</span> Wins</div>
-          </div>
-          <div class="full-lb-bc"><span class="full-lb-bc-val">3,500</span> BC</div>
-        </div>
-        <div class="full-lb-row">
-          <div class="full-lb-rank">4</div>
-          <div class="full-lb-avatar">🤖</div>
-          <div class="full-lb-info">
-            <div class="full-lb-name">Robot V1</div>
-            <div class="full-lb-meta">18 Wins</div>
-          </div>
-          <div class="full-lb-bc">1,240,000 BC</div>
-        </div>
-        <div class="full-lb-row">
-          <div class="full-lb-rank">5</div>
-          <div class="full-lb-avatar">🦾</div>
-          <div class="full-lb-info">
-            <div class="full-lb-name">Floatrobo</div>
-            <div class="full-lb-meta">14 Wins</div>
-          </div>
-          <div class="full-lb-bc">890,000 BC</div>
-        </div>
-        <div class="full-lb-row">
-          <div class="full-lb-rank">6</div>
-          <div class="full-lb-avatar">🐸</div>
-          <div class="full-lb-info">
-            <div class="full-lb-name">Pepe</div>
-            <div class="full-lb-meta">22 Wins</div>
-          </div>
-          <div class="full-lb-bc">576 BC</div>
-        </div>
+      <div class="challenge-tabs">
+        <button class="challenge-tab active" data-lbtab="earnings" onclick="setLbTab(this)">Earnings</button>
+        <button class="challenge-tab" data-lbtab="bc" onclick="setLbTab(this)">BC Earned</button>
+        <button class="challenge-tab" data-lbtab="fights" onclick="setLbTab(this)">Fights</button>
+        <button class="challenge-tab" data-lbtab="wins" onclick="setLbTab(this)">Wins</button>
+        <button class="challenge-tab" data-lbtab="losses" onclick="setLbTab(this)">Losses</button>
       </div>
+      <div class="full-lb-list" id="full-lb-list"></div>
     </div>
   </div>
 
@@ -1642,9 +1594,12 @@
     mog:  { mcap: 3.2,  change: -28.4, holders: 289, rewards: 576 },
   };
   const lbState = {
-    dogwifhat: { wins: 42, bc: 6200 },
-    bonk:      { wins: 35, bc: 3000 },
-    pudgy:     { wins: 35, bc: 3500 },
+    dogwifhat: { emoji: '🐕', name: 'Dogwifhat',      wins: 42, losses: 6,  bc: 6200,      rank: '🥇' },
+    bonk:      { emoji: '🔨', name: 'Bonk',           wins: 35, losses: 9,  bc: 3000,      rank: '🥈' },
+    pudgy:     { emoji: '🐧', name: 'Pudgy Penguin',  wins: 35, losses: 5,  bc: 3500,      rank: '🥉' },
+    robotv1:   { emoji: '🤖', name: 'Robot V1',       wins: 18, losses: 4,  bc: 1240000,   rank: 4 },
+    floatrobo: { emoji: '🦾', name: 'Floatrobo',      wins: 14, losses: 7,  bc: 890000,    rank: 5 },
+    pepe:      { emoji: '🐸', name: 'Pepe',           wins: 22, losses: 3,  bc: 576,       rank: 6 },
   };
 
   function rand(min, max) { return Math.random() * (max - min) + min; }
@@ -1652,6 +1607,68 @@
   function fmtMcap(v) { return '$' + v.toFixed(1) + 'M'; }
   function fmtChange(v) { return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; }
   function fmtBc(v) { return Math.round(v).toLocaleString('en-US'); }
+
+  let lbTab = 'earnings';
+  const lbSortKey = {
+    earnings: (s) => s.bc,
+    bc: (s) => s.bc,
+    fights: (s) => s.wins + s.losses,
+    wins: (s) => s.wins,
+    losses: (s) => s.losses,
+  };
+
+  function renderSidebarLeaderboard() {
+    const top3 = Object.keys(lbState).slice(0, 3);
+    const badges = ['👑', '⏳', '⚡'];
+    top3.forEach((key, i) => {
+      const s = lbState[key];
+      const row = document.querySelector('.sidebar-right .lb-item[data-lb="' + key + '"]');
+      if (!row) return;
+      row.querySelector('.lb-wins-val').textContent = s.wins + ' W';
+      row.querySelector('.lb-bc-val').textContent = fmtBc(s.bc) + ' BC';
+    });
+  }
+
+  function renderFullLeaderboard() {
+    const container = document.getElementById('full-lb-list');
+    if (!container) return;
+
+    const sortFn = lbSortKey[lbTab] || lbSortKey.earnings;
+    const sorted = Object.keys(lbState)
+      .map(key => ({ key, ...lbState[key] }))
+      .sort((a, b) => sortFn(b) - sortFn(a));
+
+    container.innerHTML = sorted.map((s, i) => {
+      const rankLabel = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+      let metaText;
+      if (lbTab === 'fights') {
+        metaText = (s.wins + s.losses) + ' Fights';
+      } else if (lbTab === 'wins') {
+        metaText = s.wins + ' Wins';
+      } else if (lbTab === 'losses') {
+        metaText = s.losses + ' Losses';
+      } else {
+        metaText = s.wins + 'W · ' + s.losses + 'L';
+      }
+      return `
+        <div class="full-lb-row" data-lb="${s.key}">
+          <div class="full-lb-rank">${rankLabel}</div>
+          <div class="full-lb-avatar">${s.emoji}</div>
+          <div class="full-lb-info">
+            <div class="full-lb-name">${s.name}</div>
+            <div class="full-lb-meta">${metaText}</div>
+          </div>
+          <div class="full-lb-bc">${fmtBc(s.bc)} BC</div>
+        </div>`;
+    }).join('');
+  }
+
+  function setLbTab(el) {
+    document.querySelectorAll('#view-leaderboard .challenge-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    lbTab = el.getAttribute('data-lbtab');
+    renderFullLeaderboard();
+  }
 
   function tickMarket() {
     Object.keys(marketState).forEach(key => {
@@ -1678,17 +1695,15 @@
       const s = lbState[key];
       s.bc = Math.max(0, s.bc + rand(-60, 120));
       if (Math.random() < 0.15) s.wins += 1;
-
-      document.querySelectorAll('[data-lb="' + key + '"]').forEach(row => {
-        const winsVal = row.querySelector('.lb-wins-val, .full-lb-wins-val');
-        if (winsVal) winsVal.textContent = winsVal.classList.contains('lb-wins-val') ? s.wins + ' W' : s.wins;
-        const bcVal = row.querySelector('.lb-bc-val, .full-lb-bc-val');
-        if (bcVal) bcVal.textContent = bcVal.classList.contains('lb-bc-val') ? fmtBc(s.bc) + ' BC' : fmtBc(s.bc);
-      });
+      if (Math.random() < 0.05) s.losses += 1;
     });
+    renderSidebarLeaderboard();
+    renderFullLeaderboard();
   }
 
   tickMarket();
+  renderSidebarLeaderboard();
+  renderFullLeaderboard();
   tickLeaderboard();
   setInterval(tickMarket, 2500);
   setInterval(tickLeaderboard, 4000);
