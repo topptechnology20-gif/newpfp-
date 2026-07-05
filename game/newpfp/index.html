@@ -262,9 +262,10 @@
     .arena-wrap {
       position: relative;
       background:
-        radial-gradient(ellipse at center,
-          rgb(var(--bb-primary-rgb) / 0.2) 0%,
-          var(--bb-background) 70%);
+        linear-gradient(rgb(var(--bb-background-rgb) / 0.55), rgb(var(--bb-background-rgb) / 0.55)),
+        url('/newpfp/assets/arena-bg.png');
+      background-size: cover;
+      background-position: center 60%;
       flex: 1; min-height: 170px; max-height: 230px;
       display: flex; flex-direction: column; overflow: hidden;
     }
