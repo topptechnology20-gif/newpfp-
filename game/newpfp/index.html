@@ -1463,17 +1463,51 @@
 </div>
 
 <script type="module">
-  const reactModule = await import('https://esm.sh/react@18');
-  const React = reactModule.default ?? reactModule;
-  const reactDomModule = await import('https://esm.sh/react-dom@18/client');
-  const ReactDOM = reactDomModule.default ?? reactDomModule;
-  const privyModule = await import('https://esm.sh/@privy-io/react-auth@latest');
-  const { PrivyProvider, useLogin, usePrivy } = privyModule;
+  // ── Privy auth bootstrap ──────────────────────────────────────────────────
+  // Versions are pinned so a Privy release cannot silently break compatibility.
+  // React 19 is used throughout to match @privy-io/react-auth@3.33.1's peer dep.
+  const PRIVY_REACT_VERSION  = '19.2.7';
+  const PRIVY_PKG_VERSION    = '3.33.1';
+
+  let React = null;
+  let ReactDOM = null;
+  let PrivyProvider = null;
+  let useLogin = null;
+  let usePrivy = null;
+  let privyBootOk = false;
+
+  try {
+    const reactModule    = await import(`https://esm.sh/react@${PRIVY_REACT_VERSION}`);
+    React = reactModule.default ?? reactModule;
+    const reactDomModule = await import(`https://esm.sh/react-dom@${PRIVY_REACT_VERSION}/client`);
+    ReactDOM = reactDomModule.default ?? reactDomModule;
+    const privyModule    = await import(
+      `https://esm.sh/@privy-io/react-auth@${PRIVY_PKG_VERSION}` +
+      `?deps=react@${PRIVY_REACT_VERSION},react-dom@${PRIVY_REACT_VERSION}`
+    );
+    ({ PrivyProvider, useLogin, usePrivy } = privyModule);
+    privyBootOk = true;
+  } catch (err) {
+    console.error('[Privy] Failed to load auth modules:', err);
+    // Show a visible indicator on the LOGIN button so users know login is unavailable.
+    const authBtn = document.getElementById('auth-btn');
+    if (authBtn) {
+      authBtn.textContent = 'LOGIN UNAVAILABLE';
+      authBtn.disabled = true;
+      authBtn.title = 'Wallet login could not be loaded. Please refresh.';
+      authBtn.style.opacity = '0.5';
+      authBtn.style.cursor = 'not-allowed';
+    }
+  }
 
   const PRIVY_APP_ID = 'cmgmh4vtm00ysl50d198fvxik';
   let privyLoginHandler = null;
 
   function openPrivyAuthModal() {
+    if (!privyBootOk) {
+      alert('Wallet login is temporarily unavailable. Please refresh the page.');
+      return;
+    }
     if (privyLoginHandler) {
       privyLoginHandler({
         loginMethods: ['wallet', 'email', 'google', 'twitter', 'discord', 'github', 'passkey'],
@@ -1485,62 +1519,64 @@
 
   window.openPrivyAuthModal = openPrivyAuthModal;
 
-  function AuthButton() {
-    const { ready, authenticated } = usePrivy();
-    const { login } = useLogin({
-      onComplete: () => {
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('privy-auth-complete'));
-        }
-      },
-      onError: (error) => console.error('Privy login failed', error),
-    });
+  if (privyBootOk) {
+    function AuthButton() {
+      const { ready, authenticated } = usePrivy();
+      const { login } = useLogin({
+        onComplete: () => {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('privy-auth-complete'));
+          }
+        },
+        onError: (error) => console.error('Privy login failed', error),
+      });
 
-    React.useEffect(() => {
-      privyLoginHandler = login;
-    }, [login]);
+      React.useEffect(() => {
+        privyLoginHandler = login;
+      }, [login]);
 
-    const label = !ready ? 'LOADING…' : authenticated ? 'DASHBOARD' : 'LOGIN';
-    const disabled = !ready || authenticated;
+      const label = !ready ? 'LOADING…' : authenticated ? 'DASHBOARD' : 'LOGIN';
+      const disabled = !ready || authenticated;
 
-    return React.createElement('button', {
-      className: 'login-btn',
-      style: { display: 'none' },
-      disabled,
-      onClick: () => {
-        if (authenticated) {
-          openProfileView();
-          return;
-        }
-        login({
-          loginMethods: ['wallet', 'email', 'google', 'twitter', 'discord', 'github', 'passkey'],
-        });
-      },
-    }, label);
-  }
+      return React.createElement('button', {
+        className: 'login-btn',
+        style: { display: 'none' },
+        disabled,
+        onClick: () => {
+          if (authenticated) {
+            openProfileView();
+            return;
+          }
+          login({
+            loginMethods: ['wallet', 'email', 'google', 'twitter', 'discord', 'github', 'passkey'],
+          });
+        },
+      }, label);
+    }
 
-  function PrivyAuthShell() {
-    return React.createElement(
-      PrivyProvider,
-      {
-        appId: PRIVY_APP_ID,
-        config: {
-          loginMethods: ['wallet', 'email', 'google', 'twitter', 'discord', 'github', 'passkey'],
-          appearance: {
-            theme: 'dark',
-            accentColor: '#f59e0b',
-            logo: '/newpfp/assets/bota-logo.jpg',
+    function PrivyAuthShell() {
+      return React.createElement(
+        PrivyProvider,
+        {
+          appId: PRIVY_APP_ID,
+          config: {
+            loginMethods: ['wallet', 'email', 'google', 'twitter', 'discord', 'github', 'passkey'],
+            appearance: {
+              theme: 'dark',
+              accentColor: '#f59e0b',
+              logo: '/newpfp/assets/bota-logo.jpg',
+            },
           },
         },
-      },
-      React.createElement(AuthButton)
-    );
-  }
+        React.createElement(AuthButton)
+      );
+    }
 
-  const authHost = document.getElementById('auth-button-host');
-  if (authHost) {
-    const root = ReactDOM.createRoot(authHost);
-    root.render(React.createElement(PrivyAuthShell));
+    const authHost = document.getElementById('auth-button-host');
+    if (authHost) {
+      const root = ReactDOM.createRoot(authHost);
+      root.render(React.createElement(PrivyAuthShell));
+    }
   }
 
   function toggleSearchModal(e) {
