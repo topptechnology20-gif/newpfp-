@@ -6,38 +6,31 @@
   <title>BantahBro Arena</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/styles.css" />
   <style>
+    /*
+      All colors below reference --bb-* variables exactly as declared in styles.css.
+      No hardcoded hex colors — only --bb-* vars and derived rgb(...) / hsl(...) forms.
+      Extra palette tokens (gold, orange) are isolated in :root as one-line additions.
+    */
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Non-BB tokens (not in the design system) — kept minimal */
     :root {
-      --bg: #07070f;
-      --bg2: #0e0e1c;
-      --bg3: #131325;
-      --card: #12121f;
-      --card2: #1a1a2e;
-      --border: #2a2a45;
-      --border2: #3a3a60;
-      --purple: #7c3aed;
-      --purple2: #8b5cf6;
-      --purple3: #6d28d9;
-      --neon: #a855f7;
-      --green: #10b981;
-      --green2: #13c66b;
-      --orange: #f97316;
-      --red: #ef4444;
-      --gold: #f59e0b;
-      --text: #f0f0ff;
-      --text2: #a0a0c0;
-      --text3: #606080;
-      --left-w: 172px;
+      --extra-gold:   #f59e0b;
+      --extra-orange: #f97316;
+      --left-w:  172px;
       --right-w: 220px;
-      --top-h: 56px;
+      --top-h:    56px;
     }
 
+    /* ── base ── */
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
+      background:  var(--bb-background);
+      color:       var(--bb-foreground);
+      font-family: 'Inter', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                   "Liberation Mono", "Courier New", monospace;
       min-height: 100vh;
       overflow-x: hidden;
     }
@@ -45,64 +38,92 @@
     /* ── TOP NAV ── */
     .topnav {
       position: fixed; top: 0; left: 0; right: 0; height: var(--top-h);
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
+      background:   var(--bb-sidebar);
+      border-bottom: 1px solid var(--bb-border);
       display: flex; align-items: center;
       padding: 0 14px; gap: 12px; z-index: 100;
     }
     .logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
     .logo-icon {
       width: 32px; height: 32px; border-radius: 8px;
-      background: linear-gradient(135deg, var(--purple), var(--neon));
+      background: hsl(var(--bb-primary));
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; font-weight: 900; color: #fff;
+      font-size: 16px; font-weight: 900; color: var(--bb-foreground);
     }
-    .logo-text { font-weight: 800; font-size: 13px; letter-spacing: .5px; line-height: 1.1; }
-    .logo-text span { display: block; color: var(--text2); font-weight: 500; font-size: 10px; letter-spacing: 1px; }
+    .logo-text {
+      font-weight: 800; font-size: 13px;
+      letter-spacing: .5px; line-height: 1.1;
+      color: var(--bb-foreground);
+    }
+    .logo-text span {
+      display: block;
+      color: var(--bb-muted-foreground);
+      font-weight: 500; font-size: 10px; letter-spacing: 1px;
+    }
     .search-btn {
       width: 34px; height: 34px; border-radius: 8px;
-      background: var(--card); border: 1px solid var(--border);
+      background: var(--bb-card);
+      border: 1px solid var(--bb-border);
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; color: var(--text2); font-size: 15px;
+      cursor: pointer; color: var(--bb-muted-foreground); font-size: 15px;
       flex-shrink: 0;
     }
     .nav-stats { display: flex; gap: 18px; align-items: center; }
-    .nav-stat { font-size: 11px; color: var(--text2); display: flex; align-items: center; gap: 5px; }
-    .nav-stat strong { color: var(--text); font-size: 12px; }
+    .nav-stat {
+      font-size: 11px; color: var(--bb-muted-foreground);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .nav-stat strong { color: var(--bb-foreground); font-size: 12px; }
     .live-badge {
-      background: var(--red); color: #fff; border-radius: 4px;
-      padding: 1px 5px; font-size: 9px; font-weight: 700; letter-spacing: .5px;
+      background: var(--bb-destructive); color: var(--bb-foreground);
+      border-radius: 4px; padding: 1px 5px;
+      font-size: 9px; font-weight: 700; letter-spacing: .5px;
     }
     .nav-tabs { display: flex; gap: 2px; margin: 0 auto; }
     .nav-tab {
-      padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
-      cursor: pointer; border: none; background: transparent; color: var(--text2);
+      padding: 7px 14px; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none;
+      background: transparent; color: var(--bb-muted-foreground);
       transition: all .15s;
     }
-    .nav-tab:hover { color: var(--text); background: var(--card2); }
-    .nav-tab.active { color: #fff; background: var(--purple3); }
-    .nav-tab.create { color: var(--purple2); }
+    .nav-tab:hover {
+      color: var(--bb-foreground);
+      background: var(--bb-muted);
+    }
+    .nav-tab.active {
+      color: var(--bb-foreground);
+      background: hsl(var(--bb-primary));
+    }
+    .nav-tab.create { color: var(--bb-accent); }
     .nav-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
     .icon-btn {
-      width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
-      background: var(--card); display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 14px; color: var(--text2); position: relative;
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid var(--bb-border);
+      background: var(--bb-card);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px;
+      color: var(--bb-muted-foreground); position: relative;
     }
     .badge {
       position: absolute; top: -4px; right: -4px;
-      background: var(--purple); color: #fff;
+      background: hsl(var(--bb-primary)); color: var(--bb-foreground);
       border-radius: 9px; font-size: 8px; font-weight: 700;
       padding: 1px 4px; min-width: 14px; text-align: center;
     }
     .login-btn {
-      padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;
-      background: var(--purple); color: #fff; border: none; cursor: pointer;
-      letter-spacing: .5px; transition: background .15s;
+      padding: 7px 16px; border-radius: 8px;
+      font-size: 12px; font-weight: 700;
+      background: hsl(var(--bb-primary)); color: var(--bb-foreground);
+      border: none; cursor: pointer; letter-spacing: .5px;
+      transition: opacity .15s;
     }
-    .login-btn:hover { background: var(--purple2); }
+    .login-btn:hover { opacity: .85; }
     .theme-btn {
-      width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
-      background: var(--card); display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid var(--bb-border);
+      background: var(--bb-card);
+      display: flex; align-items: center; justify-content: center;
       cursor: pointer; font-size: 15px;
     }
 
@@ -117,84 +138,115 @@
     .sidebar-left {
       width: var(--left-w);
       min-height: calc(100vh - var(--top-h));
-      background: var(--bg2);
-      border-right: 1px solid var(--border);
+      background: var(--bb-sidebar);
+      border-right: 1px solid var(--bb-border);
       position: fixed; top: var(--top-h); left: 0; bottom: 0;
       overflow-y: auto; padding: 14px 10px;
       display: flex; flex-direction: column; gap: 14px;
     }
     .sidebar-section-title {
       font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
-      color: var(--text3); text-transform: uppercase; margin-bottom: 8px;
+      color: var(--bb-muted-foreground);
+      text-transform: uppercase; margin-bottom: 8px;
       display: flex; align-items: center; gap: 6px;
     }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); display: inline-block; }
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--bb-destructive); display: inline-block;
+    }
 
     .battle-item {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 10px; padding: 8px; display: flex;
-      align-items: center; gap: 6px; margin-bottom: 6px;
+      background: var(--bb-card);
+      border: 1px solid var(--bb-border);
+      border-radius: 10px; padding: 8px;
+      display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
     }
-    .fighter-mini { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
+    .fighter-mini {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 2px; flex: 1;
+    }
     .avatar-sm {
       width: 28px; height: 28px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; border: 2px solid var(--border2);
+      font-size: 16px; border: 2px solid var(--bb-border);
     }
-    .fname { font-size: 9px; font-weight: 700; color: var(--text2); }
-    .vs-badge {
-      font-size: 9px; font-weight: 800; color: var(--text3);
-      padding: 0 2px;
-    }
+    .fname { font-size: 9px; font-weight: 700; color: var(--bb-muted-foreground); }
+    .vs-badge { font-size: 9px; font-weight: 800; color: var(--bb-muted-foreground); }
     .wait-btn {
-      background: var(--purple3); color: #fff; border: none;
-      border-radius: 5px; padding: 3px 7px; font-size: 9px; font-weight: 700;
-      cursor: pointer; letter-spacing: .3px;
+      background: hsl(var(--bb-primary)); color: var(--bb-foreground);
+      border: none; border-radius: 5px; padding: 3px 7px;
+      font-size: 9px; font-weight: 700; cursor: pointer;
     }
     .view-all-btn {
       width: 100%; padding: 9px; border-radius: 8px;
-      background: transparent; border: 1px solid var(--border2);
-      color: var(--text2); font-size: 11px; font-weight: 600;
+      background: transparent; border: 1px solid var(--bb-border);
+      color: var(--bb-muted-foreground); font-size: 11px; font-weight: 600;
       cursor: pointer; text-align: center; transition: all .15s;
     }
-    .view-all-btn:hover { background: var(--card2); color: var(--text); }
+    .view-all-btn:hover {
+      background: var(--bb-muted); color: var(--bb-foreground);
+    }
 
     /* predictions */
     .predictions-box {
-      background: var(--card); border: 1px solid var(--border);
+      background: var(--bb-card);
+      border: 1px solid var(--bb-border);
       border-radius: 10px; padding: 10px;
     }
     .pred-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 10px;
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 10px;
     }
-    .pred-title { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--text3); text-transform: uppercase; }
+    .pred-title {
+      font-size: 9px; font-weight: 700; letter-spacing: 1px;
+      color: var(--bb-muted-foreground); text-transform: uppercase;
+    }
     .timer {
-      font-size: 13px; font-weight: 800; color: var(--orange);
+      font-size: 13px; font-weight: 800; color: var(--extra-orange);
       font-variant-numeric: tabular-nums;
     }
-    .fighters-pred { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-    .fighter-pred { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .fighters-pred {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 6px;
+    }
+    .fighter-pred {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px;
+    }
     .avatar-pred {
       width: 44px; height: 44px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 24px; border: 2px solid var(--purple);
+      font-size: 24px;
+      border: 2px solid hsl(var(--bb-primary));
     }
-    .pred-name { font-size: 9px; font-weight: 700; text-align: center; }
-    .pred-pct { font-size: 11px; font-weight: 800; }
-    .pred-bar-wrap { margin: 8px 0; background: var(--bg3); border-radius: 4px; height: 5px; overflow: hidden; }
-    .pred-bar { height: 5px; border-radius: 4px; background: linear-gradient(90deg, var(--purple), var(--neon)); }
-    .pred-pool { font-size: 10px; color: var(--text2); margin: 6px 0 8px; text-align: center; }
-    .pred-pool span { color: var(--neon); font-weight: 700; }
+    .avatar-pred.alt { border-color: var(--extra-orange); }
+    .pred-name { font-size: 9px; font-weight: 700; text-align: center; color: var(--bb-foreground); }
+    .pred-pct  { font-size: 11px; font-weight: 800; }
+    .pred-pct.primary { color: hsl(var(--bb-primary)); }
+    .pred-pct.alt     { color: var(--extra-orange); }
+    .pred-bar-wrap {
+      margin: 8px 0;
+      background: var(--bb-muted);
+      border-radius: 4px; height: 5px; overflow: hidden;
+    }
+    .pred-bar {
+      height: 5px; border-radius: 4px;
+      background: hsl(var(--bb-primary));
+    }
+    .pred-pool {
+      font-size: 10px; color: var(--bb-muted-foreground);
+      margin: 6px 0 8px; text-align: center;
+    }
+    .pred-pool span { color: var(--bb-accent); font-weight: 700; }
     .pred-btns { display: flex; gap: 6px; }
     .pred-yes {
       flex: 1; padding: 7px; border-radius: 7px; border: none;
-      background: linear-gradient(90deg, #16a34a, var(--green2)); color: #fff;
+      background: var(--bb-secondary); color: var(--bb-foreground);
       font-size: 11px; font-weight: 800; cursor: pointer;
     }
     .pred-no {
       flex: 1; padding: 7px; border-radius: 7px; border: none;
-      background: linear-gradient(90deg, #b91c1c, var(--red)); color: #fff;
+      background: var(--bb-destructive); color: var(--bb-foreground);
       font-size: 11px; font-weight: 800; cursor: pointer;
     }
 
@@ -202,76 +254,83 @@
     .main {
       margin-left: var(--left-w);
       margin-right: var(--right-w);
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+      flex: 1; display: flex; flex-direction: column;
       min-height: calc(100vh - var(--top-h));
     }
 
     /* arena */
     .arena-wrap {
       position: relative;
-      background: radial-gradient(ellipse at center, #1a0a3e 0%, #0d0820 40%, #070710 100%);
+      background:
+        radial-gradient(ellipse at center,
+          rgb(var(--bb-primary-rgb) / 0.2) 0%,
+          var(--bb-background) 70%);
       flex: 1; min-height: 380px;
-      display: flex; flex-direction: column;
-      overflow: hidden;
+      display: flex; flex-direction: column; overflow: hidden;
     }
     .arena-bg-glow {
       position: absolute; inset: 0;
       background:
-        radial-gradient(ellipse 60% 40% at 50% 70%, rgba(124,58,237,.18) 0%, transparent 70%),
-        radial-gradient(ellipse 30% 20% at 25% 50%, rgba(59,130,246,.12) 0%, transparent 60%),
-        radial-gradient(ellipse 30% 20% at 75% 50%, rgba(124,58,237,.12) 0%, transparent 60%);
+        radial-gradient(ellipse 60% 40% at 50% 70%, rgb(var(--bb-primary-rgb) / 0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 30% 20% at 25% 50%, rgb(var(--bb-primary-rgb) / 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 30% 20% at 75% 50%, rgb(var(--bb-primary-rgb) / 0.08) 0%, transparent 60%);
       pointer-events: none;
     }
     .arena-floor {
       position: absolute; bottom: 0; left: 0; right: 0; height: 60%;
       background: radial-gradient(ellipse 80% 60% at 50% 100%,
-        rgba(99,60,200,.25) 0%, transparent 70%);
-      border-top: 1px solid rgba(124,58,237,.15);
+        rgb(var(--bb-primary-rgb) / 0.18) 0%, transparent 70%);
+      border-top: 1px solid rgb(var(--bb-primary-rgb) / 0.12);
     }
-    /* grid lines */
     .arena-grid {
-      position: absolute; inset: 0; opacity: .08;
+      position: absolute; inset: 0; opacity: .07;
       background-image:
-        linear-gradient(rgba(124,58,237,1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(124,58,237,1) 1px, transparent 1px);
+        linear-gradient(rgb(var(--bb-primary-rgb) / 1) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(var(--bb-primary-rgb) / 1) 1px, transparent 1px);
       background-size: 40px 40px;
     }
     .arena-content {
       position: relative; z-index: 2;
       display: flex; align-items: stretch;
-      flex: 1; padding: 16px;
-      gap: 16px;
+      flex: 1; padding: 16px; gap: 16px;
     }
 
     /* fighter panel */
     .fighter-panel {
-      display: flex; flex-direction: column; gap: 10px; width: 160px; flex-shrink: 0;
+      display: flex; flex-direction: column; gap: 10px;
+      width: 160px; flex-shrink: 0;
     }
     .fighter-card-arena {
-      background: rgba(10,10,25,.7); border: 1px solid var(--border2);
-      border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 8px;
+      background: rgb(var(--bb-background-rgb) / 0.7);
+      border: 1px solid var(--bb-border);
+      border-radius: 12px; padding: 10px;
+      display: flex; align-items: center; gap: 8px;
       backdrop-filter: blur(8px);
     }
     .arena-avatar {
       width: 48px; height: 48px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 28px; border: 2px solid var(--purple); flex-shrink: 0;
-      background: var(--card2);
+      font-size: 28px;
+      border: 2px solid hsl(var(--bb-primary));
+      flex-shrink: 0; background: var(--bb-card);
     }
+    .arena-avatar.alt { border-color: var(--extra-orange); }
     .fighter-info-arena { flex: 1; min-width: 0; }
-    .fighter-name-arena { font-size: 12px; font-weight: 800; }
-    .fighter-bc { font-size: 11px; color: var(--gold); font-weight: 700; margin-top: 2px; }
-    .spell-icons { display: flex; gap: 6px; flex-wrap: wrap; }
+    .fighter-name-arena { font-size: 12px; font-weight: 800; color: var(--bb-foreground); }
+    .fighter-bc { font-size: 11px; color: var(--extra-gold); font-weight: 700; margin-top: 2px; }
+    .spell-icons { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
     .spell-icon {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: rgba(124,58,237,.25); border: 1px solid var(--purple);
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgb(var(--bb-primary-rgb) / 0.2);
+      border: 1px solid hsl(var(--bb-primary));
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; cursor: pointer; transition: all .15s;
+      font-size: 13px; cursor: pointer; transition: all .15s;
     }
-    .spell-icon:hover { background: rgba(124,58,237,.5); transform: scale(1.1); }
-    .spell-icon.locked { background: rgba(50,50,80,.4); border-color: var(--border); opacity: .5; }
+    .spell-icon:hover { background: rgb(var(--bb-primary-rgb) / 0.45); transform: scale(1.1); }
+    .spell-icon.locked {
+      background: rgb(var(--bb-muted-rgb) / 0.3);
+      border-color: var(--bb-border); opacity: .5;
+    }
 
     /* center nft */
     .arena-center {
@@ -280,164 +339,190 @@
     }
     .nft-card {
       width: 130px; height: 130px; border-radius: 16px;
-      border: 2px solid var(--purple);
-      box-shadow: 0 0 40px rgba(124,58,237,.5), 0 0 80px rgba(124,58,237,.2);
-      background: linear-gradient(135deg, #1a0a40, #0d082a);
+      border: 2px solid hsl(var(--bb-primary));
+      box-shadow:
+        0 0 40px rgb(var(--bb-primary-rgb) / 0.5),
+        0 0 80px rgb(var(--bb-primary-rgb) / 0.2);
+      background: var(--bb-card);
       display: flex; align-items: center; justify-content: center;
       font-size: 64px; position: relative; overflow: hidden;
     }
     .nft-card::before {
       content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(124,58,237,.3), transparent 60%);
+      background: linear-gradient(135deg, rgb(var(--bb-primary-rgb) / 0.25), transparent 60%);
     }
     .vs-text {
       font-size: 11px; font-weight: 800; letter-spacing: 2px;
-      color: var(--text3); text-transform: uppercase;
+      color: var(--bb-muted-foreground); text-transform: uppercase;
     }
 
     /* spells bottom */
     .spells-row {
       display: flex; justify-content: space-between;
-      padding: 10px 16px; background: rgba(10,10,25,.6);
-      border-top: 1px solid var(--border); gap: 10px;
+      padding: 10px 16px;
+      background: rgb(var(--bb-background-rgb) / 0.6);
+      border-top: 1px solid var(--bb-border);
+      gap: 10px;
     }
     .spells-group { display: flex; gap: 8px; align-items: center; }
     .spell-btn {
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
-      cursor: pointer;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 3px; cursor: pointer;
     }
     .spell-circle {
       width: 40px; height: 40px; border-radius: 50%;
-      background: rgba(124,58,237,.2); border: 1.5px solid var(--purple);
+      background: rgb(var(--bb-primary-rgb) / 0.18);
+      border: 1.5px solid hsl(var(--bb-primary));
       display: flex; align-items: center; justify-content: center;
       font-size: 18px; transition: all .15s;
     }
-    .spell-circle:hover { background: rgba(124,58,237,.45); transform: scale(1.1); }
-    .spell-circle.locked { background: rgba(30,30,50,.5); border-color: var(--border); opacity: .45; }
-    .spell-label { font-size: 8px; font-weight: 600; color: var(--text3); letter-spacing: .5px; text-transform: uppercase; }
+    .spell-circle:hover {
+      background: rgb(var(--bb-primary-rgb) / 0.4); transform: scale(1.1);
+    }
+    .spell-circle.locked {
+      background: rgb(var(--bb-muted-rgb) / 0.3);
+      border-color: var(--bb-border); opacity: .45;
+    }
+    .spell-label {
+      font-size: 8px; font-weight: 600;
+      color: var(--bb-muted-foreground);
+      letter-spacing: .5px; text-transform: uppercase;
+    }
 
     /* bottom fighter cards */
     .fighter-cards-row {
       display: grid; grid-template-columns: repeat(4, 1fr);
       gap: 8px; padding: 12px 16px;
-      background: var(--bg2); border-top: 1px solid var(--border);
+      background: var(--bb-sidebar);
+      border-top: 1px solid var(--bb-border);
     }
     .fighter-card {
-      background: var(--card); border: 1px solid var(--border);
+      background: var(--bb-card);
+      border: 1px solid var(--bb-border);
       border-radius: 12px; padding: 10px; position: relative;
       transition: border-color .15s;
     }
-    .fighter-card:hover { border-color: var(--purple); }
+    .fighter-card:hover { border-color: hsl(var(--bb-primary)); }
     .rank-badge {
       position: absolute; top: 8px; left: 8px;
       width: 18px; height: 18px; border-radius: 50%;
-      background: var(--purple); color: #fff;
+      background: hsl(var(--bb-primary)); color: var(--bb-foreground);
       font-size: 9px; font-weight: 800;
       display: flex; align-items: center; justify-content: center;
     }
-    .fc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding-left: 22px; }
+    .rank-badge.secondary { background: var(--bb-secondary); }
+    .rank-badge.destructive { background: var(--bb-destructive); }
+    .rank-badge.orange      { background: var(--extra-orange); }
+    .fc-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 6px; padding-left: 22px;
+    }
     .fc-avatar {
       width: 40px; height: 40px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 22px; border: 2px solid var(--border2); flex-shrink: 0;
-      background: var(--card2);
+      font-size: 22px; border: 2px solid var(--bb-border);
+      flex-shrink: 0; background: var(--bb-input);
     }
     .fc-meta { flex: 1; min-width: 0; }
-    .fc-name { font-size: 13px; font-weight: 800; }
-    .fc-holders { font-size: 9px; color: var(--text3); display: flex; align-items: center; gap: 3px; }
+    .fc-name { font-size: 13px; font-weight: 800; color: var(--bb-foreground); }
+    .fc-holders { font-size: 9px; color: var(--bb-muted-foreground); }
     .fc-stats { display: flex; gap: 8px; margin-bottom: 6px; }
-    .fc-stat { font-size: 9px; color: var(--text2); }
-    .fc-stat span { color: var(--green2); font-weight: 700; }
-    .fc-stat span.neg { color: var(--red); }
+    .fc-stat { font-size: 9px; color: var(--bb-muted-foreground); }
+    .fc-stat .pos { color: var(--bb-secondary); font-weight: 700; }
+    .fc-stat .neg { color: var(--bb-destructive); font-weight: 700; }
     .fc-rewards {
-      font-size: 10px; color: var(--gold); font-weight: 700;
+      font-size: 10px; color: var(--extra-gold); font-weight: 700;
       display: flex; align-items: center; gap: 4px; margin-bottom: 7px;
     }
     .watch-btn {
       width: 100%; padding: 7px; border-radius: 7px;
       font-size: 11px; font-weight: 800; border: none; cursor: pointer;
-      background: linear-gradient(90deg, #059669, var(--green2));
-      color: #fff; letter-spacing: .3px; transition: opacity .15s;
+      background: var(--bb-secondary); color: var(--bb-foreground);
+      letter-spacing: .3px; transition: opacity .15s;
     }
     .watch-btn:hover { opacity: .85; }
-    .watch-btn.purple {
-      background: linear-gradient(90deg, var(--purple3), var(--purple2));
-    }
+    .watch-btn.primary { background: hsl(var(--bb-primary)); }
 
     /* ── RIGHT SIDEBAR ── */
     .sidebar-right {
       width: var(--right-w);
       min-height: calc(100vh - var(--top-h));
-      background: var(--bg2);
-      border-left: 1px solid var(--border);
+      background: var(--bb-sidebar);
+      border-left: 1px solid var(--bb-border);
       position: fixed; top: var(--top-h); right: 0; bottom: 0;
       overflow-y: auto; padding: 14px 12px;
       display: flex; flex-direction: column; gap: 0;
     }
 
-    /* leaderboard */
     .lb-item {
       display: flex; align-items: center; gap: 8px;
       padding: 8px 6px; border-radius: 8px;
       transition: background .15s; cursor: pointer;
     }
-    .lb-item:hover { background: var(--card2); }
-    .lb-rank { font-size: 11px; font-weight: 800; width: 16px; text-align: center; }
-    .lb-rank.gold { color: var(--gold); }
-    .lb-rank.silver { color: #9ca3af; }
-    .lb-rank.bronze { color: #d97706; }
+    .lb-item:hover { background: var(--bb-muted); }
+    .lb-rank {
+      font-size: 11px; font-weight: 800; width: 16px;
+      text-align: center; color: var(--bb-muted-foreground);
+    }
     .lb-avatar {
       width: 34px; height: 34px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 19px; border: 1.5px solid var(--border2); flex-shrink: 0;
-      background: var(--card2);
+      font-size: 19px; border: 1.5px solid var(--bb-border);
+      flex-shrink: 0; background: var(--bb-input);
     }
     .lb-info { flex: 1; min-width: 0; }
-    .lb-name { font-size: 12px; font-weight: 700; }
-    .lb-meta { font-size: 9px; color: var(--text3); display: flex; align-items: center; gap: 4px; }
-    .lb-meta .wins { color: var(--green2); font-weight: 700; }
-    .lb-bc { font-size: 10px; color: var(--text2); font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 3px; }
-    .lb-icon { font-size: 10px; }
-    .lb-divider { height: 1px; background: var(--border); margin: 6px 0; }
+    .lb-name { font-size: 12px; font-weight: 700; color: var(--bb-foreground); }
+    .lb-meta { font-size: 9px; color: var(--bb-muted-foreground); display: flex; align-items: center; gap: 4px; }
+    .lb-meta .wins { color: var(--bb-secondary); font-weight: 700; }
+    .lb-divider { height: 1px; background: var(--bb-border); margin: 6px 0; }
 
     /* trollbox */
     .trollbox-section { margin-top: 12px; flex: 1; display: flex; flex-direction: column; }
     .trollbox-header {
       display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
     }
-    .trollbox-title { font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-    .live-pill {
-      background: var(--red); color: #fff; border-radius: 5px;
-      padding: 2px 6px; font-size: 9px; font-weight: 700; letter-spacing: .5px;
+    .trollbox-title {
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--bb-foreground);
     }
-    .trollbox-messages { flex: 1; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; overflow: hidden; }
-    .troll-msg { font-size: 11px; line-height: 1.4; }
-    .troll-user { font-weight: 700; color: var(--purple2); }
-    .troll-user.bot { color: var(--text3); }
+    .live-pill {
+      background: var(--bb-destructive); color: var(--bb-foreground);
+      border-radius: 5px; padding: 2px 6px;
+      font-size: 9px; font-weight: 700; letter-spacing: .5px;
+    }
+    .trollbox-messages {
+      flex: 1; display: flex; flex-direction: column;
+      gap: 5px; margin-bottom: 10px; overflow: hidden;
+    }
+    .troll-msg { font-size: 11px; line-height: 1.4; color: var(--bb-foreground); }
+    .troll-user { font-weight: 700; color: hsl(var(--bb-primary)); }
+    .troll-user.bot { color: var(--bb-muted-foreground); }
+    .troll-user.self { color: var(--bb-secondary); }
     .troll-input-wrap {
       display: flex; gap: 6px; align-items: center;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 8px; padding: 6px 10px;
-      margin-top: auto;
+      background: var(--bb-input);
+      border: 1px solid var(--bb-border);
+      border-radius: 8px; padding: 6px 10px; margin-top: auto;
     }
     .troll-input {
       flex: 1; background: transparent; border: none; outline: none;
-      color: var(--text); font-size: 12px; font-family: inherit;
+      color: var(--bb-foreground); font-size: 12px; font-family: inherit;
     }
-    .troll-input::placeholder { color: var(--text3); }
+    .troll-input::placeholder { color: var(--bb-muted-foreground); }
     .troll-send {
       width: 24px; height: 24px; border-radius: 6px;
-      background: var(--purple); border: none; color: #fff;
-      cursor: pointer; font-size: 12px; display: flex;
-      align-items: center; justify-content: center;
+      background: hsl(var(--bb-primary)); border: none;
+      color: var(--bb-foreground); cursor: pointer;
+      font-size: 12px; display: flex; align-items: center; justify-content: center;
     }
 
-    /* scrollbar */
+    /* scrollbars — honour the bantahbro-next-ui rules already in styles.css */
     ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: var(--bg2); }
-    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bb-sidebar); }
+    ::-webkit-scrollbar-thumb { background: var(--bb-border); border-radius: 4px; }
 
-    /* ─── responsive ─── */
+    /* responsive */
     @media (max-width: 900px) {
       :root { --left-w: 0px; --right-w: 0px; }
       .sidebar-left, .sidebar-right { display: none; }
@@ -445,7 +530,7 @@
     }
   </style>
 </head>
-<body>
+<body class="bantahbro-next-ui dark">
 
 <!-- TOP NAV -->
 <nav class="topnav">
@@ -453,14 +538,11 @@
     <div class="logo-icon">⚔</div>
     <div class="logo-text">BOTA<span>ARENA</span></div>
   </a>
-
   <button class="search-btn">🔍</button>
-
   <div class="nav-stats">
-    <div class="nav-stat">BC EARNED<br><strong>0 BC 🎒</strong></div>
-    <div class="nav-stat">FIGHTERS<br><strong>50 <span class="live-badge">LIVE</span></strong></div>
+    <div class="nav-stat">BC EARNED&nbsp;&nbsp;<strong>0 BC 🎒</strong></div>
+    <div class="nav-stat">FIGHTERS&nbsp;&nbsp;<strong>50 <span class="live-badge">LIVE</span></strong></div>
   </div>
-
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="setTab(this)">Arena</button>
     <button class="nav-tab" onclick="setTab(this)">Agents</button>
@@ -468,7 +550,6 @@
     <button class="nav-tab" onclick="setTab(this)">Marketplace</button>
     <button class="nav-tab" onclick="setTab(this)">Leaderboard</button>
   </div>
-
   <div class="nav-right">
     <button class="icon-btn">⚙️</button>
     <button class="icon-btn">🔔<span class="badge">3</span></button>
@@ -478,57 +559,33 @@
   </div>
 </nav>
 
-<!-- LAYOUT -->
 <div class="layout">
 
   <!-- LEFT SIDEBAR -->
   <aside class="sidebar-left">
     <div>
       <div class="sidebar-section-title"><span class="dot"></span> Live Battles</div>
-
       <div class="battle-item">
-        <div class="fighter-mini">
-          <div class="avatar-sm">🐸</div>
-          <div class="fname">PEPE</div>
-        </div>
+        <div class="fighter-mini"><div class="avatar-sm">🐸</div><div class="fname">PEPE</div></div>
         <div class="vs-badge">VS</div>
-        <div class="fighter-mini">
-          <div class="avatar-sm">🐕</div>
-          <div class="fname">DOGE</div>
-        </div>
+        <div class="fighter-mini"><div class="avatar-sm">🐕</div><div class="fname">DOGE</div></div>
         <button class="wait-btn">WAIT</button>
       </div>
-
       <div class="battle-item">
-        <div class="fighter-mini">
-          <div class="avatar-sm">🔨</div>
-          <div class="fname">BONK</div>
-        </div>
+        <div class="fighter-mini"><div class="avatar-sm">🔨</div><div class="fname">BONK</div></div>
         <div class="vs-badge">VS</div>
-        <div class="fighter-mini">
-          <div class="avatar-sm">😺</div>
-          <div class="fname">MOG</div>
-        </div>
+        <div class="fighter-mini"><div class="avatar-sm">😺</div><div class="fname">MOG</div></div>
         <button class="wait-btn">WAIT</button>
       </div>
-
       <div class="battle-item">
-        <div class="fighter-mini">
-          <div class="avatar-sm">🦊</div>
-          <div class="fname">BRETT</div>
-        </div>
+        <div class="fighter-mini"><div class="avatar-sm">🦊</div><div class="fname">BRETT</div></div>
         <div class="vs-badge">VS</div>
-        <div class="fighter-mini">
-          <div class="avatar-sm">🐶</div>
-          <div class="fname">WIF</div>
-        </div>
+        <div class="fighter-mini"><div class="avatar-sm">🐶</div><div class="fname">WIF</div></div>
         <button class="wait-btn">WAIT</button>
       </div>
-
       <button class="view-all-btn">VIEW ALL BATTLES →</button>
     </div>
 
-    <!-- Predictions -->
     <div>
       <div class="sidebar-section-title">⚡ Live Predictions</div>
       <div class="predictions-box">
@@ -540,18 +597,16 @@
           <div class="fighter-pred">
             <div class="avatar-pred">🤖</div>
             <div class="pred-name">ROBOT V1</div>
-            <div class="pred-pct" style="color:var(--purple2)">52%</div>
+            <div class="pred-pct primary">52%</div>
           </div>
-          <div style="font-size:11px;font-weight:800;color:var(--text3)">VS</div>
+          <div style="font-size:11px;font-weight:800;color:var(--bb-muted-foreground)">VS</div>
           <div class="fighter-pred">
-            <div class="avatar-pred" style="border-color:var(--orange)">🦾</div>
+            <div class="avatar-pred alt">🦾</div>
             <div class="pred-name">FLOATROBO</div>
-            <div class="pred-pct" style="color:var(--orange)">48%</div>
+            <div class="pred-pct alt">48%</div>
           </div>
         </div>
-        <div class="pred-bar-wrap">
-          <div class="pred-bar" style="width:52%"></div>
-        </div>
+        <div class="pred-bar-wrap"><div class="pred-bar" style="width:52%"></div></div>
         <div class="pred-pool">POOL: <span>128,450 BC</span></div>
         <div class="pred-btns">
           <button class="pred-yes">✓ YES</button>
@@ -561,15 +616,12 @@
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
+  <!-- MAIN -->
   <main class="main">
-
-    <!-- ARENA -->
     <div class="arena-wrap">
       <div class="arena-bg-glow"></div>
       <div class="arena-grid"></div>
       <div class="arena-floor"></div>
-
       <div class="arena-content">
 
         <!-- Left fighter -->
@@ -579,7 +631,7 @@
             <div class="fighter-info-arena">
               <div class="fighter-name-arena">ROBOT V1</div>
               <div class="fighter-bc">1,240,000 BC</div>
-              <div style="display:flex;gap:4px;margin-top:6px;">
+              <div class="spell-icons">
                 <div class="spell-icon">✏️</div>
                 <div class="spell-icon">🛡</div>
                 <div class="spell-icon">⚡</div>
@@ -601,62 +653,37 @@
             <div class="fighter-info-arena" style="text-align:right">
               <div class="fighter-name-arena">FLOATROBO</div>
               <div class="fighter-bc">890,000 BC</div>
-              <div style="display:flex;gap:4px;margin-top:6px;justify-content:flex-end;">
+              <div class="spell-icons" style="justify-content:flex-end">
                 <div class="spell-icon locked">🔒</div>
                 <div class="spell-icon">⚡</div>
                 <div class="spell-icon">🛡</div>
                 <div class="spell-icon">✏️</div>
               </div>
             </div>
-            <div class="arena-avatar" style="border-color:var(--orange)">🦾</div>
+            <div class="arena-avatar alt">🦾</div>
           </div>
         </div>
       </div>
 
-      <!-- Spells bottom row -->
+      <!-- Spells row -->
       <div class="spells-row">
         <div class="spells-group">
-          <div class="spell-btn">
-            <div class="spell-circle">🧪</div>
-            <div class="spell-label">Potion</div>
-          </div>
-          <div class="spell-btn">
-            <div class="spell-circle">🛡</div>
-            <div class="spell-label">Shield</div>
-          </div>
-          <div class="spell-btn">
-            <div class="spell-circle">⚡</div>
-            <div class="spell-label">Thunder</div>
-          </div>
-          <div class="spell-btn">
-            <div class="spell-circle locked">🔒</div>
-            <div class="spell-label">Locked</div>
-          </div>
+          <div class="spell-btn"><div class="spell-circle">🧪</div><div class="spell-label">Potion</div></div>
+          <div class="spell-btn"><div class="spell-circle">🛡</div><div class="spell-label">Shield</div></div>
+          <div class="spell-btn"><div class="spell-circle">⚡</div><div class="spell-label">Thunder</div></div>
+          <div class="spell-btn"><div class="spell-circle locked">🔒</div><div class="spell-label">Locked</div></div>
         </div>
         <div class="spells-group">
-          <div class="spell-btn">
-            <div class="spell-circle locked">🔒</div>
-            <div class="spell-label">Locked</div>
-          </div>
-          <div class="spell-btn">
-            <div class="spell-circle">⚡</div>
-            <div class="spell-label">Thunder</div>
-          </div>
-          <div class="spell-btn">
-            <div class="spell-circle">🛡</div>
-            <div class="spell-label">Shield</div>
-          </div>
-          <div class="spell-btn">
-            <div class="spell-circle">🧪</div>
-            <div class="spell-label">Potion</div>
-          </div>
+          <div class="spell-btn"><div class="spell-circle locked">🔒</div><div class="spell-label">Locked</div></div>
+          <div class="spell-btn"><div class="spell-circle">⚡</div><div class="spell-label">Thunder</div></div>
+          <div class="spell-btn"><div class="spell-circle">🛡</div><div class="spell-label">Shield</div></div>
+          <div class="spell-btn"><div class="spell-circle">🧪</div><div class="spell-label">Potion</div></div>
         </div>
       </div>
     </div>
 
-    <!-- FIGHTER CARDS ROW -->
+    <!-- Fighter cards -->
     <div class="fighter-cards-row">
-
       <div class="fighter-card">
         <div class="rank-badge">1</div>
         <div class="fc-header">
@@ -668,14 +695,14 @@
         </div>
         <div class="fc-stats">
           <div class="fc-stat">MCAP $12.5M</div>
-          <div class="fc-stat">24H <span>+85.2%</span></div>
+          <div class="fc-stat">24H <span class="pos">+85.2%</span></div>
         </div>
         <div class="fc-rewards">🏆 576 BC Rewards</div>
         <button class="watch-btn">● WATCH 2 EARN</button>
       </div>
 
       <div class="fighter-card">
-        <div class="rank-badge" style="background:var(--orange)">2</div>
+        <div class="rank-badge orange">2</div>
         <div class="fc-header">
           <div class="fc-avatar">🐕</div>
           <div class="fc-meta">
@@ -685,14 +712,14 @@
         </div>
         <div class="fc-stats">
           <div class="fc-stat">MCAP $8.3M</div>
-          <div class="fc-stat">24H <span>+63.1%</span></div>
+          <div class="fc-stat">24H <span class="pos">+63.1%</span></div>
         </div>
         <div class="fc-rewards">🏆 576 BC Rewards</div>
-        <button class="watch-btn purple">● WATCH 2 EARN</button>
+        <button class="watch-btn primary">● WATCH 2 EARN</button>
       </div>
 
       <div class="fighter-card">
-        <div class="rank-badge" style="background:var(--green)">3</div>
+        <div class="rank-badge secondary">3</div>
         <div class="fc-header">
           <div class="fc-avatar">🔨</div>
           <div class="fc-meta">
@@ -702,14 +729,14 @@
         </div>
         <div class="fc-stats">
           <div class="fc-stat">MCAP $5.1M</div>
-          <div class="fc-stat">24H <span>+41.6%</span></div>
+          <div class="fc-stat">24H <span class="pos">+41.6%</span></div>
         </div>
         <div class="fc-rewards">🏆 576 BC Rewards</div>
         <button class="watch-btn">● WATCH 2 EARN</button>
       </div>
 
       <div class="fighter-card">
-        <div class="rank-badge" style="background:var(--red)">4</div>
+        <div class="rank-badge destructive">4</div>
         <div class="fc-header">
           <div class="fc-avatar">😺</div>
           <div class="fc-meta">
@@ -722,59 +749,52 @@
           <div class="fc-stat">24H <span class="neg">-28.4%</span></div>
         </div>
         <div class="fc-rewards">🏆 576 BC Rewards</div>
-        <button class="watch-btn purple">● WATCH 2 EARN</button>
+        <button class="watch-btn primary">● WATCH 2 EARN</button>
       </div>
-
     </div>
   </main>
 
   <!-- RIGHT SIDEBAR -->
   <aside class="sidebar-right">
     <div class="sidebar-section-title">🏆 Leaderboard</div>
-
     <div class="lb-item">
-      <div class="lb-rank gold">🥇</div>
+      <div class="lb-rank">🥇</div>
       <div class="lb-avatar">🐕</div>
       <div class="lb-info">
         <div class="lb-name">Dogwifhat</div>
         <div class="lb-meta"><span class="wins">42 W</span> · 6,200 BC</div>
       </div>
-      <div class="lb-bc">👑</div>
+      <span>👑</span>
     </div>
-
     <div class="lb-item">
-      <div class="lb-rank silver">🥈</div>
+      <div class="lb-rank">🥈</div>
       <div class="lb-avatar">🔨</div>
       <div class="lb-info">
         <div class="lb-name">Bonk</div>
         <div class="lb-meta"><span class="wins">35 W</span> · 3,000 BC</div>
       </div>
-      <div class="lb-bc">⏳</div>
+      <span>⏳</span>
     </div>
-
     <div class="lb-item">
-      <div class="lb-rank bronze">🥉</div>
+      <div class="lb-rank">🥉</div>
       <div class="lb-avatar">🐧</div>
       <div class="lb-info">
         <div class="lb-name">Pudgy Penguin</div>
         <div class="lb-meta"><span class="wins">35 W</span> · 3,500 BC</div>
       </div>
-      <div class="lb-bc">⚡</div>
+      <span>⚡</span>
     </div>
-
     <div class="lb-divider"></div>
-
     <div class="lb-item">
-      <div class="lb-rank" style="color:var(--text3)">4</div>
+      <div class="lb-rank">4</div>
       <div class="lb-avatar">🐸</div>
       <div class="lb-info">
         <div class="lb-name">PepeLord</div>
         <div class="lb-meta"><span class="wins">28 W</span> · 2,800 BC</div>
       </div>
     </div>
-
     <div class="lb-item">
-      <div class="lb-rank" style="color:var(--text3)">5</div>
+      <div class="lb-rank">5</div>
       <div class="lb-avatar">🤖</div>
       <div class="lb-info">
         <div class="lb-name">RobotX</div>
@@ -782,7 +802,6 @@
       </div>
     </div>
 
-    <!-- Trollbox -->
     <div class="trollbox-section">
       <div class="trollbox-header">
         <div class="trollbox-title">Trollbox</div>
@@ -796,44 +815,40 @@
         <div class="troll-msg"><span class="troll-user bot">bantah_bot:</span> ✗ BATTLE STARTED! ROBOT V1 vs FLOATROBO — FIGHT!</div>
       </div>
       <div class="troll-input-wrap">
-        <input class="troll-input" type="text" placeholder="Say something..." id="troll-in" onkeydown="sendMsg(event)" />
+        <input class="troll-input" type="text" placeholder="Say something..."
+               id="troll-in" onkeydown="sendMsg(event)" />
         <button class="troll-send" onclick="sendMsgBtn()">↑</button>
       </div>
     </div>
   </aside>
-
 </div>
 
 <script>
-  // Nav tab switching
   function setTab(el) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
   }
 
-  // Countdown timer
   let secs = 45;
   setInterval(() => {
     secs = secs > 0 ? secs - 1 : 59;
-    const m = String(Math.floor(secs / 60)).padStart(2, '0');
-    const s = String(secs % 60).padStart(2, '0');
     const el = document.getElementById('timer');
-    if (el) el.textContent = m + ':' + s;
+    if (el) el.textContent =
+      String(Math.floor(secs / 60)).padStart(2,'0') + ':' +
+      String(secs % 60).padStart(2,'0');
   }, 1000);
 
-  // Trollbox
   const mockMsgs = [
-    ['kek_enjoyer', 'PEPE ARMY NO CAP 🐸'],
-    ['degen420', 'LFG ROBOT V1 🤖'],
-    ['whale_x', 'THIS IS INSANE 🤯'],
-    ['moon_chaser', 'PUMP IT 🚀'],
-    ['suchlow69', 'WAGMI 💪'],
-    ['frog_lord', 'NGL this is wild'],
+    ['kek_enjoyer','PEPE ARMY NO CAP 🐸'],
+    ['degen420','LFG ROBOT V1 🤖'],
+    ['whale_x','THIS IS INSANE 🤯'],
+    ['moon_chaser','PUMP IT 🚀'],
+    ['suchlow69','WAGMI 💪'],
+    ['frog_lord','NGL this is wild'],
   ];
   let msgIdx = 0;
   setInterval(() => {
-    const [user, msg] = mockMsgs[msgIdx % mockMsgs.length];
-    msgIdx++;
+    const [user, msg] = mockMsgs[msgIdx++ % mockMsgs.length];
     const box = document.getElementById('trollbox');
     if (!box) return;
     const div = document.createElement('div');
@@ -850,7 +865,7 @@
     if (!inp || !inp.value.trim() || !box) return;
     const div = document.createElement('div');
     div.className = 'troll-msg';
-    div.innerHTML = `<span class="troll-user" style="color:var(--green2)">you:</span> ${inp.value.trim()}`;
+    div.innerHTML = `<span class="troll-user self">you:</span> ${inp.value.trim()}`;
     box.appendChild(div);
     if (box.children.length > 8) box.removeChild(box.children[0]);
     inp.value = '';
