@@ -588,6 +588,89 @@
     .full-lb-meta { font-size: 10px; color: var(--bb-muted-foreground); }
     .full-lb-bc { font-size: 12px; font-weight: 800; color: var(--extra-gold); text-align: right; }
 
+    /* ── NOTIFICATIONS DROPDOWN ── */
+    .notif-dropdown {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      width: 300px; max-height: 380px; overflow-y: auto;
+      background: var(--bb-card); border: 1px solid var(--bb-border);
+      border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.35);
+      display: none; z-index: 200;
+    }
+    .notif-dropdown.open { display: block; }
+    .notif-header {
+      padding: 12px 14px; border-bottom: 1px solid var(--bb-border);
+      font-size: 13px; font-weight: 800; color: var(--bb-foreground);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .notif-header span { font-size: 10px; font-weight: 600; color: hsl(var(--bb-primary)); cursor: pointer; }
+    .notif-item {
+      display: flex; gap: 10px; padding: 10px 14px;
+      border-bottom: 1px solid var(--bb-border); cursor: pointer;
+    }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item:hover { background: var(--bb-muted); }
+    .notif-icon {
+      width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+      background: var(--bb-input); display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .notif-body { flex: 1; min-width: 0; }
+    .notif-text { font-size: 11.5px; color: var(--bb-foreground); line-height: 1.4; }
+    .notif-text strong { font-weight: 700; }
+    .notif-time { font-size: 10px; color: var(--bb-muted-foreground); margin-top: 2px; }
+    .notif-item.unread { position: relative; }
+    .notif-item.unread::after {
+      content: ''; position: absolute; top: 14px; right: 12px;
+      width: 7px; height: 7px; border-radius: 50%; background: hsl(var(--bb-primary));
+    }
+
+    /* ── PROFILE VIEW ── */
+    .profile-banner {
+      height: 110px; border-radius: 14px; margin-bottom: -40px;
+      background: linear-gradient(120deg, hsl(var(--bb-primary)) 0%, var(--extra-orange) 100%);
+    }
+    .profile-header {
+      display: flex; align-items: flex-end; gap: 16px; padding: 0 16px;
+    }
+    .profile-avatar {
+      width: 84px; height: 84px; border-radius: 16px;
+      border: 4px solid var(--bb-background);
+      background: var(--bb-card); display: flex; align-items: center; justify-content: center;
+      font-size: 42px; flex-shrink: 0;
+    }
+    .profile-id { flex: 1; padding-bottom: 6px; }
+    .profile-name { font-size: 18px; font-weight: 800; color: var(--bb-foreground); }
+    .profile-handle { font-size: 12px; color: var(--bb-muted-foreground); }
+    .profile-edit-btn {
+      padding: 7px 14px; border-radius: 8px; font-size: 11px; font-weight: 700;
+      background: var(--bb-card); border: 1px solid var(--bb-border);
+      color: var(--bb-foreground); cursor: pointer; margin-bottom: 6px;
+    }
+    .profile-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+      margin: 20px 0;
+    }
+    .profile-stat-card {
+      background: var(--bb-card); border: 1px solid var(--bb-border);
+      border-radius: 12px; padding: 12px; text-align: center;
+    }
+    .profile-stat-value { font-size: 16px; font-weight: 800; color: var(--bb-foreground); }
+    .profile-stat-label { font-size: 10px; color: var(--bb-muted-foreground); margin-top: 2px; letter-spacing: .3px; }
+    .profile-section-title {
+      font-size: 13px; font-weight: 800; color: var(--bb-foreground);
+      margin: 18px 0 10px;
+    }
+    .profile-agents-row {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .profile-mini-agent {
+      background: var(--bb-card); border: 1px solid var(--bb-border);
+      border-radius: 10px; padding: 10px; text-align: center; font-size: 20px;
+    }
+    .profile-mini-agent-name { font-size: 11px; font-weight: 700; color: var(--bb-foreground); margin-top: 4px; }
+    .profile-mini-agent-sub { font-size: 9px; color: var(--bb-muted-foreground); }
+
     /* ── RIGHT SIDEBAR ── */
     .sidebar-right {
       width: var(--right-w);
@@ -697,10 +780,50 @@
   </div>
   <div class="nav-right">
     <button class="icon-btn">⚙️</button>
-    <button class="icon-btn">🔔<span class="badge">3</span></button>
-    <button class="icon-btn">👛</button>
+    <div style="position:relative;">
+      <button class="icon-btn" id="notif-btn" onclick="toggleNotifications(event)">🔔<span class="badge">3</span></button>
+      <div class="notif-dropdown" id="notif-dropdown">
+        <div class="notif-header">Notifications <span onclick="markAllRead()">Mark all read</span></div>
+        <div class="notif-item unread">
+          <div class="notif-icon">🏆</div>
+          <div class="notif-body">
+            <div class="notif-text"><strong>ROBOT V1</strong> won its battle vs FLOATROBO and earned 1,240,000 BC</div>
+            <div class="notif-time">2 min ago</div>
+          </div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-icon">⚔️</div>
+          <div class="notif-body">
+            <div class="notif-text"><strong>PEPE</strong> was challenged by a new agent — respond now</div>
+            <div class="notif-time">14 min ago</div>
+          </div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-icon">💰</div>
+          <div class="notif-body">
+            <div class="notif-text">You earned <strong>576 BC</strong> from Watch 2 Earn rewards</div>
+            <div class="notif-time">40 min ago</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon">📈</div>
+          <div class="notif-body">
+            <div class="notif-text"><strong>DOGE</strong> climbed to Level 11 after its last win</div>
+            <div class="notif-time">1 hr ago</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon">🛒</div>
+          <div class="notif-body">
+            <div class="notif-text">Marketplace: <strong>Golden Skin</strong> is back in stock</div>
+            <div class="notif-time">3 hr ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="icon-btn" onclick="setTab(document.querySelector('[data-view=profile]'))">👛</button>
     <button class="login-btn">LOGIN</button>
-    <button class="theme-btn">🌙</button>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
   </div>
 </nav>
 
@@ -1109,6 +1232,102 @@
       </div>
     </div>
   </div>
+
+  <!-- PROFILE VIEW -->
+  <div id="view-profile" class="tab-view">
+    <div class="view-inner">
+      <div class="profile-banner"></div>
+      <div class="profile-header">
+        <div class="profile-avatar">🧑‍🚀</div>
+        <div class="profile-id">
+          <div class="profile-name">Commander Zero</div>
+          <div class="profile-handle">@commander0 · Joined Jan 2026</div>
+        </div>
+        <button class="profile-edit-btn">EDIT PROFILE</button>
+      </div>
+      <div class="profile-stats">
+        <div class="profile-stat-card">
+          <div class="profile-stat-value">6</div>
+          <div class="profile-stat-label">AGENTS</div>
+        </div>
+        <div class="profile-stat-card">
+          <div class="profile-stat-value">87W</div>
+          <div class="profile-stat-label">TOTAL WINS</div>
+        </div>
+        <div class="profile-stat-card">
+          <div class="profile-stat-value">3,241,000</div>
+          <div class="profile-stat-label">BC EARNED</div>
+        </div>
+        <div class="profile-stat-card">
+          <div class="profile-stat-value">#4</div>
+          <div class="profile-stat-label">RANK</div>
+        </div>
+      </div>
+      <div class="profile-section-title">My Agents</div>
+      <div class="profile-agents-row">
+        <div class="profile-mini-agent">
+          🤖
+          <div class="profile-mini-agent-name">ROBOT V1</div>
+          <div class="profile-mini-agent-sub">Level 12 · 18W-4L</div>
+        </div>
+        <div class="profile-mini-agent">
+          🦾
+          <div class="profile-mini-agent-name">FLOATROBO</div>
+          <div class="profile-mini-agent-sub">Level 9 · 14W-7L</div>
+        </div>
+        <div class="profile-mini-agent">
+          🐸
+          <div class="profile-mini-agent-name">PEPE</div>
+          <div class="profile-mini-agent-sub">Level 15 · 22W-3L</div>
+        </div>
+        <div class="profile-mini-agent">
+          🐕
+          <div class="profile-mini-agent-name">DOGE</div>
+          <div class="profile-mini-agent-sub">Level 11 · 16W-6L</div>
+        </div>
+        <div class="profile-mini-agent">
+          🔨
+          <div class="profile-mini-agent-name">BONK</div>
+          <div class="profile-mini-agent-sub">Level 8 · 10W-9L</div>
+        </div>
+        <div class="profile-mini-agent">
+          😺
+          <div class="profile-mini-agent-name">MOG</div>
+          <div class="profile-mini-agent-sub">Level 6 · 7W-11L</div>
+        </div>
+      </div>
+      <div class="profile-section-title">Recent Activity</div>
+      <div class="full-lb-list">
+        <div class="full-lb-row">
+          <div class="full-lb-rank">🏆</div>
+          <div class="full-lb-avatar">🤖</div>
+          <div class="full-lb-info">
+            <div class="full-lb-name">ROBOT V1 defeated FLOATROBO</div>
+            <div class="full-lb-meta">2 min ago</div>
+          </div>
+          <div class="full-lb-bc">+1,240,000 BC</div>
+        </div>
+        <div class="full-lb-row">
+          <div class="full-lb-rank">💰</div>
+          <div class="full-lb-avatar">🎬</div>
+          <div class="full-lb-info">
+            <div class="full-lb-name">Watch 2 Earn reward claimed</div>
+            <div class="full-lb-meta">40 min ago</div>
+          </div>
+          <div class="full-lb-bc">+576 BC</div>
+        </div>
+        <div class="full-lb-row">
+          <div class="full-lb-rank">🛒</div>
+          <div class="full-lb-avatar">🧪</div>
+          <div class="full-lb-info">
+            <div class="full-lb-name">Purchased Power Potion</div>
+            <div class="full-lb-meta">2 hr ago</div>
+          </div>
+          <div class="full-lb-bc">-250 BC</div>
+        </div>
+      </div>
+    </div>
+  </div>
   </main>
 
   <!-- RIGHT SIDEBAR -->
@@ -1172,6 +1391,34 @@
     document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
     const target = document.getElementById('view-' + view);
     if (target) target.classList.add('active');
+
+    document.getElementById('notif-dropdown').classList.remove('open');
+  }
+
+  function toggleNotifications(e) {
+    e.stopPropagation();
+    document.getElementById('notif-dropdown').classList.toggle('open');
+  }
+
+  document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('notif-dropdown');
+    const btn = document.getElementById('notif-btn');
+    if (dropdown && dropdown.classList.contains('open') && !dropdown.contains(e.target) && e.target !== btn) {
+      dropdown.classList.remove('open');
+    }
+  });
+
+  function markAllRead() {
+    document.querySelectorAll('.notif-item.unread').forEach(item => item.classList.remove('unread'));
+    const badge = document.querySelector('#notif-btn .badge');
+    if (badge) badge.remove();
+  }
+
+  function toggleTheme() {
+    const body = document.body;
+    const btn = document.getElementById('theme-btn');
+    const isDark = body.classList.toggle('dark');
+    btn.textContent = isDark ? '🌙' : '☀️';
   }
 
   const cardFighters = {
