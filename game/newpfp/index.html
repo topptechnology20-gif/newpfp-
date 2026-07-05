@@ -73,6 +73,41 @@
       cursor: pointer; color: var(--bb-muted-foreground); font-size: 13px;
       flex-shrink: 0;
     }
+    .search-modal {
+      position: fixed; inset: 0; z-index: 120;
+      display: none; align-items: flex-start; justify-content: center;
+      padding: 72px 16px 16px; background: rgba(2, 6, 23, 0.62);
+    }
+    .search-modal.open { display: flex; }
+    .search-modal-card {
+      width: min(420px, 100%); background: var(--bb-card);
+      border: 1px solid var(--bb-border); border-radius: 14px;
+      overflow: hidden; box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+    }
+    .search-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-bottom: 1px solid var(--bb-border);
+      background: var(--bb-sidebar);
+    }
+    .search-modal-header strong { font-size: 13px; }
+    .search-modal-close {
+      border: none; background: transparent; color: var(--bb-foreground);
+      cursor: pointer; font-size: 18px; line-height: 1;
+    }
+    .search-modal-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+    .search-modal-body input {
+      width: 100%; border: 1px solid var(--bb-border); border-radius: 10px;
+      padding: 10px 12px; background: var(--bb-input); color: var(--bb-foreground);
+      font-size: 13px; outline: none;
+    }
+    .search-suggestions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .search-chip {
+      padding: 6px 9px; border-radius: 999px; font-size: 11px;
+      background: var(--bb-muted); color: var(--bb-muted-foreground);
+      border: 1px solid var(--bb-border);
+    }
     .nav-stats { display: flex; gap: 18px; align-items: center; }
     .nav-stat {
       font-size: 11px; color: var(--bb-muted-foreground);
@@ -144,6 +179,31 @@
       transition: opacity .15s;
     }
     .login-btn:hover { opacity: .85; }
+    .privy-auth-modal {
+      position: fixed; inset: 0; z-index: 1000;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(0, 0, 0, 0.72); padding: 20px;
+    }
+    .privy-auth-modal.open { display: flex; }
+    .privy-auth-card {
+      width: min(440px, 100%); height: min(760px, 100%);
+      background: var(--bb-card); border: 1px solid var(--bb-border);
+      border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    }
+    .privy-auth-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid var(--bb-border);
+      background: var(--bb-sidebar);
+    }
+    .privy-auth-header strong { font-size: 14px; }
+    .privy-auth-close {
+      border: none; background: transparent; color: var(--bb-foreground);
+      cursor: pointer; font-size: 20px; line-height: 1;
+    }
+    .privy-auth-frame {
+      flex: 1; width: 100%; border: none; background: white;
+    }
     .theme-btn {
       width: 32px; height: 32px; border-radius: 8px;
       border: 1px solid var(--bb-border);
@@ -694,51 +754,56 @@
     }
 
     /* ── PROFILE VIEW ── */
-    .profile-banner {
-      height: 110px; border-radius: 14px; margin-bottom: -40px;
+    .profile-shell {
+      display: grid; gap: 10px;
+    }
+    .profile-card {
+      background: var(--bb-card);
+      border: 1px solid var(--bb-border);
+      border-radius: 14px;
+      padding: 12px;
+      display: grid; gap: 8px;
+    }
+    .profile-card-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--bb-muted-foreground);
+    }
+    .profile-wallet-pill {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
       background: linear-gradient(120deg, hsl(var(--bb-primary)) 0%, var(--extra-orange) 100%);
+      color: #fff;
     }
-    .profile-header {
-      display: flex; align-items: flex-end; gap: 16px; padding: 0 16px;
+    .profile-wallet-pill strong { font-size: 12px; }
+    .profile-wallet-pill span { font-size: 10px; opacity: .9; }
+    .profile-metric-grid {
+      display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px;
     }
-    .profile-avatar {
-      width: 84px; height: 84px; border-radius: 16px;
-      border: 4px solid var(--bb-background);
-      background: var(--bb-card); display: flex; align-items: center; justify-content: center;
-      font-size: 42px; flex-shrink: 0;
+    .profile-metric {
+      background: var(--bb-input);
+      border: 1px solid var(--bb-border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex; flex-direction: column; gap: 2px;
     }
-    .profile-id { flex: 1; padding-bottom: 6px; }
-    .profile-name { font-size: 18px; font-weight: 800; color: var(--bb-foreground); }
-    .profile-handle { font-size: 12px; color: var(--bb-muted-foreground); }
-    .profile-edit-btn {
-      padding: 7px 14px; border-radius: 8px; font-size: 11px; font-weight: 700;
-      background: var(--bb-card); border: 1px solid var(--bb-border);
-      color: var(--bb-foreground); cursor: pointer; margin-bottom: 6px;
+    .profile-metric .label { font-size: 9px; text-transform: uppercase; color: var(--bb-muted-foreground); letter-spacing: .08em; }
+    .profile-metric .value { font-size: 14px; font-weight: 800; color: var(--bb-foreground); }
+    .profile-nav-row {
+      display: flex; gap: 6px; flex-wrap: wrap;
     }
-    .profile-stats {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-      margin: 20px 0;
+    .profile-nav-chip {
+      padding: 7px 10px; border-radius: 999px; border: 1px solid var(--bb-border);
+      background: var(--bb-background); color: var(--bb-foreground); font-size: 10px; font-weight: 700;
+      cursor: pointer;
     }
-    .profile-stat-card {
-      background: var(--bb-card); border: 1px solid var(--bb-border);
-      border-radius: 12px; padding: 12px; text-align: center;
+    .profile-nav-chip.active {
+      background: hsl(var(--bb-primary)); color: #fff; border-color: hsl(var(--bb-primary));
     }
-    .profile-stat-value { font-size: 16px; font-weight: 800; color: var(--bb-foreground); }
-    .profile-stat-label { font-size: 10px; color: var(--bb-muted-foreground); margin-top: 2px; letter-spacing: .3px; }
-    .profile-section-title {
-      font-size: 13px; font-weight: 800; color: var(--bb-foreground);
-      margin: 18px 0 10px;
-    }
-    .profile-agents-row {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 10px;
-    }
-    .profile-mini-agent {
-      background: var(--bb-card); border: 1px solid var(--bb-border);
-      border-radius: 10px; padding: 10px; text-align: center; font-size: 20px;
-    }
-    .profile-mini-agent-name { font-size: 11px; font-weight: 700; color: var(--bb-foreground); margin-top: 4px; }
-    .profile-mini-agent-sub { font-size: 9px; color: var(--bb-muted-foreground); }
 
     /* ── RIGHT SIDEBAR ── */
     .sidebar-right {
@@ -845,7 +910,7 @@
     <div class="logo-icon"><img src="/newpfp/assets/bota-logo.jpg" alt="BOTA"></div>
     <div class="logo-text">BOTA<span>ARENA</span></div>
   </a>
-  <button class="search-btn">🔍</button>
+  <button class="search-btn" type="button" onclick="toggleSearchModal(event)" aria-label="Open search">🔍</button>
   <div class="nav-stats">
     <div class="nav-stat">BC EARNED&nbsp;&nbsp;<strong>0 BC 🎒</strong></div>
     <div class="nav-stat">FIGHTERS&nbsp;&nbsp;<strong>50 <span class="live-badge">LIVE</span></strong></div>
@@ -866,53 +931,37 @@
     <button class="nav-tab" data-view="leaderboard" onclick="setTab(this); closeMobileMenu();">Leaderboard</button>
   </div>
   <div class="nav-right">
-    <button class="icon-btn">⚙️</button>
     <div style="position:relative;">
       <button class="icon-btn" id="notif-btn" onclick="toggleNotifications(event)">🔔<span class="badge">3</span></button>
       <div class="notif-dropdown" id="notif-dropdown">
         <div class="notif-header">Notifications <span onclick="markAllRead()">Mark all read</span></div>
-        <div class="notif-item unread">
-          <div class="notif-icon">🏆</div>
-          <div class="notif-body">
-            <div class="notif-text"><strong>ROBOT V1</strong> won its battle vs FLOATROBO and earned 1,240,000 BC</div>
-            <div class="notif-time">2 min ago</div>
-          </div>
-        </div>
-        <div class="notif-item unread">
-          <div class="notif-icon">⚔️</div>
-          <div class="notif-body">
-            <div class="notif-text"><strong>PEPE</strong> was challenged by a new agent — respond now</div>
-            <div class="notif-time">14 min ago</div>
-          </div>
-        </div>
-        <div class="notif-item unread">
-          <div class="notif-icon">💰</div>
-          <div class="notif-body">
-            <div class="notif-text">You earned <strong>576 BC</strong> from Watch 2 Earn rewards</div>
-            <div class="notif-time">40 min ago</div>
-          </div>
-        </div>
-        <div class="notif-item">
-          <div class="notif-icon">📈</div>
-          <div class="notif-body">
-            <div class="notif-text"><strong>DOGE</strong> climbed to Level 11 after its last win</div>
-            <div class="notif-time">1 hr ago</div>
-          </div>
-        </div>
-        <div class="notif-item">
-          <div class="notif-icon">🛒</div>
-          <div class="notif-body">
-            <div class="notif-text">Marketplace: <strong>Golden Skin</strong> is back in stock</div>
-            <div class="notif-time">3 hr ago</div>
-          </div>
-        </div>
+        <div id="notif-list"></div>
       </div>
     </div>
-    <button class="icon-btn" onclick="setTab(document.querySelector('[data-view=profile]'))">👛</button>
-    <button class="login-btn">LOGIN</button>
+    <button class="icon-btn" onclick="openProfileView()" title="Open profile" aria-label="Open profile">👤</button>
+    <button class="login-btn" id="auth-btn" onclick="window.openPrivyAuthModal ? window.openPrivyAuthModal() : openProfileView()">LOGIN</button>
+    <div id="auth-button-host" style="display:none"></div>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
   </div>
 </nav>
+
+<div class="search-modal" id="search-modal" role="dialog" aria-modal="true" aria-label="Search">
+  <div class="search-modal-card">
+    <div class="search-modal-header">
+      <strong>Search</strong>
+      <button class="search-modal-close" type="button" onclick="closeSearchModal()" aria-label="Close search">×</button>
+    </div>
+    <div class="search-modal-body">
+      <input type="text" placeholder="Search fighters, battles, or agents" />
+      <div class="search-suggestions">
+        <span class="search-chip">Fighters</span>
+        <span class="search-chip">Battles</span>
+        <span class="search-chip">Agents</span>
+        <span class="search-chip">Marketplace</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="layout">
 
@@ -1275,94 +1324,60 @@
   <!-- PROFILE VIEW -->
   <div id="view-profile" class="tab-view">
     <div class="view-inner">
-      <div class="profile-banner"></div>
-      <div class="profile-header">
-        <div class="profile-avatar">🧑‍🚀</div>
-        <div class="profile-id">
-          <div class="profile-name">Commander Zero</div>
-          <div class="profile-handle">@commander0 · Joined Jan 2026</div>
-        </div>
-        <button class="profile-edit-btn">EDIT PROFILE</button>
-      </div>
-      <div class="profile-stats">
-        <div class="profile-stat-card">
-          <div class="profile-stat-value">6</div>
-          <div class="profile-stat-label">AGENTS</div>
-        </div>
-        <div class="profile-stat-card">
-          <div class="profile-stat-value">87W</div>
-          <div class="profile-stat-label">TOTAL WINS</div>
-        </div>
-        <div class="profile-stat-card">
-          <div class="profile-stat-value">3,241,000</div>
-          <div class="profile-stat-label">BC EARNED</div>
-        </div>
-        <div class="profile-stat-card">
-          <div class="profile-stat-value">#4</div>
-          <div class="profile-stat-label">RANK</div>
-        </div>
-      </div>
-      <div class="profile-section-title">My Agents</div>
-      <div class="profile-agents-row">
-        <div class="profile-mini-agent">
-          🤖
-          <div class="profile-mini-agent-name">ROBOT V1</div>
-          <div class="profile-mini-agent-sub">Level 12 · 18W-4L</div>
-        </div>
-        <div class="profile-mini-agent">
-          🦾
-          <div class="profile-mini-agent-name">FLOATROBO</div>
-          <div class="profile-mini-agent-sub">Level 9 · 14W-7L</div>
-        </div>
-        <div class="profile-mini-agent">
-          🐸
-          <div class="profile-mini-agent-name">PEPE</div>
-          <div class="profile-mini-agent-sub">Level 15 · 22W-3L</div>
-        </div>
-        <div class="profile-mini-agent">
-          🐕
-          <div class="profile-mini-agent-name">DOGE</div>
-          <div class="profile-mini-agent-sub">Level 11 · 16W-6L</div>
-        </div>
-        <div class="profile-mini-agent">
-          🔨
-          <div class="profile-mini-agent-name">BONK</div>
-          <div class="profile-mini-agent-sub">Level 8 · 10W-9L</div>
-        </div>
-        <div class="profile-mini-agent">
-          😺
-          <div class="profile-mini-agent-name">MOG</div>
-          <div class="profile-mini-agent-sub">Level 6 · 7W-11L</div>
-        </div>
-      </div>
-      <div class="profile-section-title">Recent Activity</div>
-      <div class="full-lb-list">
-        <div class="full-lb-row">
-          <div class="full-lb-rank">🏆</div>
-          <div class="full-lb-avatar">🤖</div>
-          <div class="full-lb-info">
-            <div class="full-lb-name">ROBOT V1 defeated FLOATROBO</div>
-            <div class="full-lb-meta">2 min ago</div>
+      <div class="profile-shell">
+        <div class="profile-card">
+          <div class="profile-card-title">Wallet connected</div>
+          <div class="profile-wallet-pill">
+            <div>
+              <strong id="profile-pill-title">Connected</strong><br />
+              <span id="profile-wallet-label">Wallet connected</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="font-size: 18px;">🧢</div>
+              <button class="login-btn" style="padding:6px 10px; font-size:11px;" onclick="window.location.reload()">Logout</button>
+            </div>
           </div>
-          <div class="full-lb-bc">+1,240,000 BC</div>
-        </div>
-        <div class="full-lb-row">
-          <div class="full-lb-rank">💰</div>
-          <div class="full-lb-avatar">🎬</div>
-          <div class="full-lb-info">
-            <div class="full-lb-name">Watch 2 Earn reward claimed</div>
-            <div class="full-lb-meta">40 min ago</div>
+          <div class="profile-metric-grid">
+            <div class="profile-metric">
+              <span class="label">My Agents</span>
+              <span class="value" id="profile-my-agents">0</span>
+            </div>
+            <div class="profile-metric">
+              <span class="label">Queue</span>
+              <span class="value" id="profile-queue">0</span>
+            </div>
+            <div class="profile-metric">
+              <span class="label">BantCredit</span>
+              <span class="value" id="profile-bantcredit">0</span>
+            </div>
+            <div class="profile-metric">
+              <span class="label">BANTC claim</span>
+              <span class="value" id="profile-bantc-claim">0</span>
+            </div>
+            <div class="profile-metric">
+              <span class="label">Earned USDC</span>
+              <span class="value" id="profile-earned-usdc">$0</span>
+            </div>
+            <div class="profile-metric">
+              <span class="label">Status</span>
+              <span class="value" id="profile-status">Ready</span>
+            </div>
           </div>
-          <div class="full-lb-bc">+576 BC</div>
         </div>
-        <div class="full-lb-row">
-          <div class="full-lb-rank">🛒</div>
-          <div class="full-lb-avatar">🧪</div>
-          <div class="full-lb-info">
-            <div class="full-lb-name">Purchased Power Potion</div>
-            <div class="full-lb-meta">2 hr ago</div>
+
+        <div class="profile-card">
+          <div class="profile-card-title">Navigation</div>
+          <div class="profile-nav-row">
+            <button class="profile-nav-chip active">My Agents</button>
+            <button class="profile-nav-chip">Queue</button>
+            <button class="profile-nav-chip">Battle History</button>
+            <button class="profile-nav-chip">Packs</button>
+            <button class="profile-nav-chip">Tools</button>
+            <button class="profile-nav-chip">Loadouts</button>
+            <button class="profile-nav-chip">Inv. History</button>
+            <button class="profile-nav-chip">Claim</button>
+            <button class="profile-nav-chip">Settings</button>
           </div>
-          <div class="full-lb-bc">-250 BC</div>
         </div>
       </div>
     </div>
@@ -1447,8 +1462,106 @@
   </aside>
 </div>
 
-<script>
+<script type="module">
+  const reactModule = await import('https://esm.sh/react@18');
+  const React = reactModule.default ?? reactModule;
+  const reactDomModule = await import('https://esm.sh/react-dom@18/client');
+  const ReactDOM = reactDomModule.default ?? reactDomModule;
+  const privyModule = await import('https://esm.sh/@privy-io/react-auth@latest');
+  const { PrivyProvider, useLogin, usePrivy } = privyModule;
+
+  const PRIVY_APP_ID = 'cmgmh4vtm00ysl50d198fvxik';
+  let privyLoginHandler = null;
+
+  function openPrivyAuthModal() {
+    if (privyLoginHandler) {
+      privyLoginHandler({
+        loginMethods: ['wallet', 'email', 'google', 'twitter', 'discord', 'github', 'passkey'],
+      });
+      return;
+    }
+    console.warn('Privy login handler is not ready yet.');
+  }
+
+  window.openPrivyAuthModal = openPrivyAuthModal;
+
+  function AuthButton() {
+    const { ready, authenticated } = usePrivy();
+    const { login } = useLogin({
+      onComplete: () => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('privy-auth-complete'));
+        }
+      },
+      onError: (error) => console.error('Privy login failed', error),
+    });
+
+    React.useEffect(() => {
+      privyLoginHandler = login;
+    }, [login]);
+
+    const label = !ready ? 'LOADING…' : authenticated ? 'DASHBOARD' : 'LOGIN';
+    const disabled = !ready || authenticated;
+
+    return React.createElement('button', {
+      className: 'login-btn',
+      style: { display: 'none' },
+      disabled,
+      onClick: () => {
+        if (authenticated) {
+          openProfileView();
+          return;
+        }
+        login({
+          loginMethods: ['wallet', 'email', 'google', 'twitter', 'discord', 'github', 'passkey'],
+        });
+      },
+    }, label);
+  }
+
+  function PrivyAuthShell() {
+    return React.createElement(
+      PrivyProvider,
+      {
+        appId: PRIVY_APP_ID,
+        config: {
+          loginMethods: ['wallet', 'email', 'google', 'twitter', 'discord', 'github', 'passkey'],
+          appearance: {
+            theme: 'dark',
+            accentColor: '#f59e0b',
+            logo: '/newpfp/assets/bota-logo.jpg',
+          },
+        },
+      },
+      React.createElement(AuthButton)
+    );
+  }
+
+  const authHost = document.getElementById('auth-button-host');
+  if (authHost) {
+    const root = ReactDOM.createRoot(authHost);
+    root.render(React.createElement(PrivyAuthShell));
+  }
+
+  function toggleSearchModal(e) {
+    if (e) e.stopPropagation();
+    const modal = document.getElementById('search-modal');
+    if (!modal) return;
+    const willOpen = !modal.classList.contains('open');
+    modal.classList.toggle('open', willOpen);
+    if (willOpen) {
+      const input = modal.querySelector('input');
+      if (input) setTimeout(() => input.focus(), 40);
+    }
+  }
+
+  function closeSearchModal() {
+    const modal = document.getElementById('search-modal');
+    if (modal) modal.classList.remove('open');
+  }
+
   function setTab(el) {
+    closeSearchModal();
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
 
@@ -1458,6 +1571,16 @@
     if (target) target.classList.add('active');
 
     document.getElementById('notif-dropdown').classList.remove('open');
+  }
+
+  function openProfileView() {
+    closeSearchModal();
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+    const profileView = document.getElementById('view-profile');
+    if (profileView) profileView.classList.add('active');
+    document.getElementById('notif-dropdown').classList.remove('open');
+    loadProfile();
   }
 
   function toggleMobileMenu(e) {
@@ -1539,9 +1662,116 @@
     renderChallenges('all');
   }
 
-  function toggleNotifications(e) {
+  window.setTab = setTab;
+  window.openProfileView = openProfileView;
+  window.toggleSearchModal = toggleSearchModal;
+  window.closeSearchModal = closeSearchModal;
+  window.toggleMobileMenu = toggleMobileMenu;
+  window.closeMobileMenu = closeMobileMenu;
+  window.openChallenges = openChallenges;
+  window.toggleTheme = toggleTheme;
+  window.toggleNotifications = toggleNotifications;
+  window.markAllRead = markAllRead;
+  window.sendMsgBtn = sendMsgBtn;
+  window.sendMsg = sendMsg;
+
+  async function api(path, options = {}) {
+    const response = await fetch(path, {
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      ...options,
+    });
+    if (!response.ok) {
+      throw new Error('Request failed');
+    }
+    return response.headers.get('content-type')?.includes('application/json') ? response.json() : response.text();
+  }
+
+  const profileState = { profile: null, notifications: [] };
+
+  function formatRelativeTime(value) {
+    if (!value) return 'just now';
+    const parsed = new Date(value);
+    const diff = Math.max(1, Math.round((Date.now() - parsed.getTime()) / 60000));
+    if (diff < 60) return `${diff} min ago`;
+    const hrs = Math.floor(diff / 60);
+    if (hrs < 24) return `${hrs} hr ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days} day${days === 1 ? '' : 's'} ago`;
+  }
+
+  function renderProfile() {
+    const profile = profileState.profile;
+    if (!profile) return;
+    document.getElementById('profile-pill-title').textContent = profile.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : 'Connected';
+    document.getElementById('profile-wallet-label').textContent = profile.walletAddress ? `${profile.walletAddress.slice(0, 6)}…${profile.walletAddress.slice(-4)}` : 'Wallet connected';
+    document.getElementById('profile-my-agents').textContent = profile.myAgents ?? 0;
+    document.getElementById('profile-queue').textContent = profile.queue ?? 0;
+    document.getElementById('profile-bantcredit').textContent = profile.bantCredit?.toLocaleString() ?? 0;
+    document.getElementById('profile-bantc-claim').textContent = profile.bantcClaim?.toLocaleString() ?? 0;
+    document.getElementById('profile-earned-usdc').textContent = `$${Number(profile.earnedUsdc || 0).toLocaleString()}`;
+    document.getElementById('profile-status').textContent = profile.status || 'Ready';
+  }
+
+  function renderNotifications() {
+    const list = document.getElementById('notif-list');
+    const badge = document.querySelector('#notif-btn .badge');
+    const unreadCount = profileState.notifications.filter(n => !n.read).length;
+    if (badge) {
+      badge.textContent = unreadCount;
+      badge.style.display = unreadCount > 0 ? 'inline-flex' : 'none';
+    }
+    if (!list) return;
+    if (!profileState.notifications.length) {
+      list.innerHTML = '<div class="notif-item"><div class="notif-body"><div class="notif-text">No notifications yet</div></div></div>';
+      return;
+    }
+    list.innerHTML = profileState.notifications.map(notification => `
+      <div class="notif-item ${notification.read ? '' : 'unread'}" data-id="${notification.id}">
+        <div class="notif-icon">${notification.icon || '🔔'}</div>
+        <div class="notif-body">
+          <div class="notif-text"><strong>${notification.title}</strong> ${notification.message}</div>
+          <div class="notif-time">${formatRelativeTime(notification.createdAt)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function loadProfile() {
+    try {
+      profileState.profile = await api('/api/profile');
+      renderProfile();
+    } catch (error) {
+      console.warn('Profile API unavailable', error);
+    }
+  }
+
+  async function loadNotifications() {
+    try {
+      profileState.notifications = await api('/api/notifications');
+      renderNotifications();
+    } catch (error) {
+      console.warn('Notifications API unavailable', error);
+    }
+  }
+
+  async function markAllRead() {
+    try {
+      await api('/api/notifications/read-all', { method: 'PATCH' });
+      await loadNotifications();
+    } catch (error) {
+      console.warn('Could not mark notifications as read', error);
+    }
+  }
+
+  async function toggleNotifications(e) {
     e.stopPropagation();
-    document.getElementById('notif-dropdown').classList.toggle('open');
+    const dropdown = document.getElementById('notif-dropdown');
+    if (!dropdown) return;
+    const willOpen = !dropdown.classList.contains('open');
+    dropdown.classList.toggle('open', willOpen);
+    if (willOpen) {
+      await loadNotifications();
+    }
   }
 
   document.addEventListener('click', function(e) {
@@ -1550,13 +1780,30 @@
     if (dropdown && dropdown.classList.contains('open') && !dropdown.contains(e.target) && e.target !== btn) {
       dropdown.classList.remove('open');
     }
+
+    const modal = document.getElementById('search-modal');
+    const searchBtn = document.querySelector('.search-btn');
+    if (modal && modal.classList.contains('open') && !modal.contains(e.target) && e.target !== searchBtn) {
+      modal.classList.remove('open');
+    }
   });
 
-  function markAllRead() {
-    document.querySelectorAll('.notif-item.unread').forEach(item => item.classList.remove('unread'));
-    const badge = document.querySelector('#notif-btn .badge');
-    if (badge) badge.remove();
-  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeSearchModal();
+  });
+
+  document.addEventListener('click', async function(e) {
+    const item = e.target.closest('.notif-item[data-id]');
+    if (!item) return;
+    const notificationId = item.getAttribute('data-id');
+    try {
+      await api(`/api/notifications/${notificationId}/read`, { method: 'PATCH' });
+      await loadNotifications();
+    } catch (error) {
+      console.warn('Could not mark notification as read', error);
+    }
+  });
+
 
   function toggleTheme() {
     const body = document.body;
@@ -1752,8 +1999,11 @@
   renderSidebarLeaderboard();
   renderFullLeaderboard();
   tickLeaderboard();
+  loadProfile();
+  loadNotifications();
   setInterval(tickMarket, 2500);
   setInterval(tickLeaderboard, 4000);
+  setInterval(loadNotifications, 15000);
 </script>
 </body>
 </html>

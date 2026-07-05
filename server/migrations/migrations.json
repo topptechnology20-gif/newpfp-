@@ -1,0 +1,6 @@
+{
+  "description": "Simple manifest of SQL migration files",
+  "migrations": [
+    "0001_create_pack_tables.sql"
+  ]
+}
