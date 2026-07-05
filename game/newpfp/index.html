@@ -269,7 +269,7 @@
       background: url('/newpfp/assets/arena-bg.png');
       background-size: cover;
       background-position: center 60%;
-      flex: 1; min-height: 520px; max-height: 680px;
+      flex: 1; min-height: 220px; max-height: 300px;
       display: flex; flex-direction: column; overflow: hidden;
     }
     .arena-bg-glow {
@@ -804,6 +804,14 @@
       :root { --left-w: 0px; --right-w: 0px; }
       .sidebar-left, .sidebar-right { display: none; }
       .main { margin: 0; }
+      .fighter-cards-row {
+        display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+      }
+      .fighter-cards-row::-webkit-scrollbar { display: none; }
+      .fighter-cards-row .fighter-card {
+        flex: 0 0 78%; scroll-snap-align: start;
+      }
     }
   </style>
 </head>
