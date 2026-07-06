@@ -1,0 +1,1045 @@
+firts, Explain the pumpfun trending engine. Im using repolit, i need the engin to fetch and turn them (the coin meme pfp/logo to fighters) in the fighters in the arena.
+
+
+Architected pipeline converting trending coins into arena fighters
+Architected pipeline converting trending coins into arena fighters
+Good question to answer before touching any code. Let me break the engine into its four parts so you know exactly what you're building before writing a line.
+
+THE FOUR PARTS
+PART 1: DATA FETCHER
+Polls pump.fun every 5 minutes for trending coins
+Returns: name, symbol, logo URL, market cap, volume, price, age
+
+PART 2: FIGHTER GENERATOR
+Converts those coin metrics into a Combat Profile
+Same formula as the token fighter generator already in the V2 spec
+
+PART 3: IMAGE PIPELINE
+Fetches the coin logo URL
+Processes it into a circular avatar (crop, normalize, frame)
+Stores the processed URL on the fighter record
+
+PART 4: ARENA SEEDER
+Takes the generated fighters and drops them into the Simulator
+Auto-refreshes as trending coins change (old ones removed, new ones added)
+PART 1: DATA FETCHER
+Pump.fun exposes a public API the community has documented. The most reliable endpoints on Replit:
+
+javascript
+// server/pumpfun/fetcher.js
+
+const PUMPFUN_API = 'https://client-api-2-74b1891ee9f9.herokuapp.com';
+
+// Trending by market cap (most relevant for arena seeding)
+async function fetchTrendingCoins(limit = 20) {
+  const res = await fetch(
+    `${PUMPFUN_API}/coins?limit=${limit}&sort=market_cap&order=DESC&includeNsfw=false`
+  );
+  const data = await res.json();
+  return data; // array of coin objects
+}
+
+// King of the Hill (the #1 coin right now)
+async function fetchKingOfHill() {
+  const res = await fetch(`${PUMPFUN_API}/coins/king-of-the-hill?includeNsfw=false`);
+  return await res.json();
+}
+
+// Recently active (high recent volume)
+async function fetchRecentlyTraded(limit = 10) {
+  const res = await fetch(
+    `${PUMPFUN_API}/coins?limit=${limit}&sort=last_trade_timestamp&order=DESC&includeNsfw=false`
+  );
+  return await res.json();
+}
+What each coin object contains:
+
+javascript
+{
+  mint: "AbCd...xyz",           // Solana mint address = unique ID
+  name: "PEPE on SOL",          // display name
+  symbol: "PEPESOL",            // ticker
+  description: "The best...",
+  image_uri: "https://cf-ipfs.com/ipfs/Qm...", // logo URL ← key
+  market_cap: 420000,           // in USD
+  usd_market_cap: 420000,
+  created_timestamp: 1718200000,
+  last_trade_timestamp: 1718205000,
+  king_of_the_hill_timestamp: null, // set if it was #1
+  complete: false,              // false = still on pump.fun, true = graduated to Raydium
+  total_supply: 1000000000,
+  volume: 85000                 // 24h volume USD
+}
+Important flags to filter on:
+
+javascript
+function isValidForArena(coin) {
+  return (
+    coin.image_uri &&                    // has a logo
+    coin.usd_market_cap > 10000 &&       // minimum $10K mcap (filters rugs)
+    coin.usd_market_cap < 69000000 &&    // still on pump.fun (under bonding curve)
+    coin.name.length < 40 &&             // no spam names
+    !coin.name.includes('http')          // no link spam
+  );
+}
+PART 2: FIGHTER GENERATOR
+Exactly the same formula as the generateTokenCombatProfile function in the V2 Combat Profile spec. Apply it to pump.fun coin data:
+
+javascript
+// server/pumpfun/generator.js
+
+function normalize(value, min, max) {
+  return Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
+}
+
+function generatePumpFunFighterProfile(coin) {
+  const ageInMinutes = (Date.now() / 1000 - coin.created_timestamp) / 60;
+  const ageInHours   = ageInMinutes / 60;
+
+  return {
+    // Identity
+    source:        'PUMPFUN',
+    source_id:     coin.mint,
+    display_name:  `${coin.symbol}`,
+    full_name:     coin.name,
+    image_uri:     coin.image_uri,   // raw — processed in Part 3
+    community_tag: coin.symbol,
+
+    // Combat Profile traits (0-100)
+    aggression:   normalize(coin.usd_market_cap, 0, 1_000_000) * 100,
+    // Higher mcap = more aggressive (established force)
+
+    defense:      normalize(coin.total_supply / 1e9, 0, 10) * 100,
+    // More tokens = more resilient (harder to move)
+
+    intelligence: normalize(ageInHours, 0, 72) * 100,
+    // Older coin = smarter (survived longer, not a 5-min rug)
+
+    speed:        normalize(coin.volume, 0, 500_000) * 100,
+    // Volume = speed (how fast money is moving through it)
+
+    luck:         coin.king_of_the_hill_timestamp ? 85 : normalize(Math.random(), 0, 1) * 40 + 20,
+    // Was it ever King of the Hill? Lucky. Otherwise mild random.
+
+    hp: 80 + normalize(coin.usd_market_cap, 0, 500_000) * 120,
+    // HP 80-200 based on market cap
+
+    // Arena metadata
+    effective_tier: 'none',    // no tools equipped yet — seeded as Tier None (bait fighters)
+    is_pumpfun_seed: true,
+    is_king_of_hill: !!coin.king_of_the_hill_timestamp,
+    graduated:       coin.complete,
+  };
+}
+What you get from this:
+
+Brand new coin (5 min old, $15K mcap, high volume):
+  aggression:   1      ← tiny mcap = timid
+  defense:      50     ← standard supply
+  intelligence: 1      ← brand new = dumb, unpredictable
+  speed:        90     ← high volume = very fast
+  luck:         35     ← random
+  hp:           82
+
+Established pump coin (24h old, $400K mcap, steady volume):
+  aggression:   40
+  defense:      50
+  intelligence: 33
+  speed:        60
+  luck:         28
+  hp:           156
+
+King of the Hill ($500K+ mcap):
+  aggression:   50
+  defense:      50
+  intelligence: 40
+  speed:        70
+  luck:         85     ← KotH bonus
+  hp:           180
+PART 3: IMAGE PIPELINE
+This is the most important part for the Avatar Mode integration. The logo goes through three steps:
+
+javascript
+// server/pumpfun/imagePipeline.js
+// Uses: sharp (npm install sharp) + node-fetch
+
+const sharp = require('sharp');
+const fetch = require('node-fetch');
+
+async function processCoinLogo(imageUri) {
+  try {
+    // Step 1: Fetch the raw image
+    // pump.fun uses IPFS - two fallback gateways
+    const url = imageUri
+      .replace('https://cf-ipfs.com/ipfs/', 'https://ipfs.io/ipfs/')
+
+    const res = await fetch(url, { timeout: 8000 });
+    const buffer = await res.buffer();
+
+    // Step 2: Resize + circular crop
+    const size = 200;
+    const circleOverlay = Buffer.from(
+      `<svg><circle cx="${size/2}" cy="${size/2}" r="${size/2}"/></svg>`
+    );
+
+    const processed = await sharp(buffer)
+      .resize(size, size, { fit: 'cover', position: 'centre' })
+      .png()
+      .composite([{ input: circleOverlay, blend: 'dest-in' }])
+      // Step 3: Normalize brightness (prevents black squares)
+      .modulate({ brightness: 1.05, saturation: 1.1 })
+      .toBuffer();
+
+    // Step 4: Store (Replit = write to /tmp or upload to Cloudinary/S3)
+    // For Replit dev: return base64 data URI
+    const base64 = processed.toString('base64');
+    return `data:image/png;base64,${base64}`;
+
+  } catch (err) {
+    console.error('Image pipeline failed for', imageUri, err.message);
+    return null; // fighter gets Bantah default head as fallback
+  }
+}
+On Replit specifically:
+
+javascript
+// Replit has ephemeral filesystem — images disappear on restart
+// Two practical options:
+
+// OPTION A: Store as base64 in DB (simple, works for MVP)
+fighter.processed_avatar = base64DataUri;
+
+// OPTION B: Upload to Cloudinary (free tier, persists)
+const cloudinary = require('cloudinary').v2;
+const result = await cloudinary.uploader.upload(base64DataUri, {
+  folder: 'bota/avatars',
+  public_id: coin.mint,
+  overwrite: true,
+});
+fighter.processed_avatar = result.secure_url;
+PART 4: ARENA SEEDER
+The engine that keeps the simulator populated with fresh fighters:
+
+javascript
+// server/pumpfun/arenaSeeder.js
+
+const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const MAX_PUMPFUN_FIGHTERS_IN_ARENA = 20;
+
+async function seedArenaFromPumpFun() {
+  console.log('[PumpFun Seeder] Fetching trending coins...');
+
+  // Fetch three pools
+  const [trending, recent, kotH] = await Promise.all([
+    fetchTrendingCoins(15),
+    fetchRecentlyTraded(5),
+    fetchKingOfHill(),
+  ]);
+
+  // Merge + deduplicate by mint
+  const allCoins = dedupeByMint([...trending, ...recent, kotH]);
+
+  // Filter valid
+  const validCoins = allCoins.filter(isValidForArena);
+
+  // Remove stale pump.fun fighters from arena
+  // (coins that are no longer trending get replaced)
+  await db.execute(
+    `UPDATE bota_fighter_profiles
+     SET arena_status = 'retired'
+     WHERE source = 'PUMPFUN'
+     AND arena_status = 'active'`
+  );
+
+  // Seed new fighters
+  for (const coin of validCoins.slice(0, MAX_PUMPFUN_FIGHTERS_IN_ARENA)) {
+    const profile = generatePumpFunFighterProfile(coin);
+    const avatar  = await processCoinLogo(coin.image_uri);
+
+    await upsertFighter({
+      ...profile,
+      processed_avatar: avatar || null,
+      arena_status: 'active',
+      admin_tier: coin.king_of_the_hill_timestamp ? 'D_LEGENDARY' : 'B_STANDARD',
+      // KotH coin = Legendary seed agent in the arena
+    });
+  }
+
+  console.log(`[PumpFun Seeder] ${validCoins.length} fighters seeded.`);
+}
+
+// Run on server start + every 5 minutes
+seedArenaFromPumpFun();
+setInterval(seedArenaFromPumpFun, REFRESH_INTERVAL);
+FULL FLOW END TO END
+Every 5 minutes on Replit server:
+         ↓
+Fetch pump.fun trending + recent + KotH
+         ↓
+Filter valid coins (mcap floor, no spam)
+         ↓
+Generate Combat Profile from metrics
+         ↓
+Fetch + process logo → circular avatar
+         ↓
+Upsert into fighter_combat_profiles (source = 'PUMPFUN')
+         ↓
+Mark as active in simulator arena
+         ↓
+Old pump.fun fighters → retired (replaced by new trending)
+         ↓
+Arena always has 15-20 live pump.fun fighters
+         ↓
+Users spectating see real trending coins fighting
+         ↓
+Watch + earn BC (spectator mode — Avatar Mode or Bantah Mode)
+         ↓
+5 minutes later: repeat with whatever is trending NOW
+WHAT MAKES THIS POWERFUL
+Pump.fun changes every 5 minutes in real life
+Your arena changes every 5 minutes to match
+
+Users open BOTA and see:
+"BONKSOLANA is fighting TRUMPSOL right now"
+
+They recognise the coins from their Twitter feed
+They're already emotionally invested
+They predict outcomes
+They earn BC
+They come back in 5 minutes to see new fights
+
+The pump.fun trending engine IS the content engine
+No manual work needed
+Fully autonomous
+Always fresh
+REPLIT-SPECIFIC SETUP
+javascript
+// package.json additions
+"sharp": "^0.33.0",
+"node-fetch": "^2.7.0"
+
+// .replit or index.js — start the seeder on boot
+import './server/pumpfun/arenaSeeder.js';
+
+// Environment variables (Replit Secrets tab):
+CLOUDINARY_CLOUD_NAME=your_cloud
+CLOUDINARY_API_KEY=your_key
+CLOUDINARY_API_SECRET=your_secret
+// (only if using Cloudinary — skip for base64 MVP)
+WHAT TO BUILD FIRST
+Day 1:  fetcher.js → confirm pump.fun API returns data in Replit
+Day 2:  generator.js → confirm Combat Profile generates correctly
+Day 3:  imagePipeline.js → confirm logos process to circular avatars
+Day 4:  arenaSeeder.js → confirm fighters appear in simulator
+Day 5:  test the full loop (5-min refresh, old fighters retire)
+Want me to write the full production-ready version of any one of these four files, or the Replit index.js entry point that wires them all together?
+
+what about the matching logic? like new trending coin on pumpfun and BSC and even base too. We can fetch the most 5 -6 tredning memes there to match and fights. They must update on the Leaderboard and also the Fighter lists pages too
+
+
+Architected multi-chain matching engine with leaderboard synchronization
+Architected multi-chain matching engine with leaderboard synchronization
+Good expansion. Three chains means three data sources, one unified fighter pool, and one matching engine that works across all of them. Let me map the whole system.
+
+THE FULL ARCHITECTURE
+CHAIN FETCHERS (3 sources, run every 5 min)
+  Pump.fun  → top 6 Solana meme coins
+  DexScreener/BSC → top 5 BSC meme coins  
+  DexScreener/Base → top 5 Base meme coins
+        ↓
+NORMALIZER
+  Converts all 3 formats into one unified CoinProfile schema
+        ↓
+FIGHTER GENERATOR
+  generateTokenCombatProfile() — same formula, any chain
+        ↓
+IMAGE PIPELINE
+  Fetch logo → circular crop → store
+        ↓
+UNIFIED FIGHTER POOL (16-20 active cross-chain fighters)
+        ↓
+MATCHING ENGINE
+  Pairs fighters by ECPS ±15%, prefers cross-chain drama
+        ↓
+BATTLE ENGINE (existing)
+  Simulates fight, logs round-by-round
+        ↓
+LEADERBOARD SERVICE
+  Updates rankings per-chain + global
+        ↓
+FIGHTER LIST SERVICE
+  Real-time updates across all UI pages
+CHAIN FETCHERS
+javascript
+// server/chains/chainConfig.js
+
+export const CHAIN_CONFIG = {
+  solana: {
+    id: 'solana',
+    name: 'Solana',
+    label: 'SOL',
+    color: '#9945FF',
+    slots: 6,     // fighters seeded per refresh cycle
+    logoOverride: null,
+  },
+  bsc: {
+    id: 'bsc',
+    name: 'BNB Chain',
+    label: 'BSC',
+    color: '#F3BA2F',
+    slots: 5,
+    logoOverride: null,
+  },
+  base: {
+    id: 'base',
+    name: 'Base',
+    label: 'BASE',
+    color: '#0052FF',
+    slots: 5,
+    logoOverride: null,
+  },
+};
+javascript
+// server/chains/fetchers.js
+
+const DEXSCREENER = 'https://api.dexscreener.com';
+const PUMPFUN_API = 'https://client-api-2-74b1891ee9f9.herokuapp.com';
+
+// ── Solana / Pump.fun ────────────────────────────────────────────
+export async function fetchSolanaTrending(limit = 6) {
+  const [trending, kotH] = await Promise.all([
+    fetch(`${PUMPFUN_API}/coins?limit=${limit}&sort=market_cap&order=DESC&includeNsfw=false`).then(r => r.json()),
+    fetch(`${PUMPFUN_API}/coins/king-of-the-hill?includeNsfw=false`).then(r => r.json()),
+  ]);
+  const merged = dedupeByField([...trending, kotH], 'mint');
+  return merged.filter(isValidPumpFunCoin).slice(0, limit).map(normalizePumpFunCoin);
+}
+
+// ── BSC ─────────────────────────────────────────────────────────
+export async function fetchBSCTrending(limit = 5) {
+  // DexScreener boosted tokens, filter to BSC
+  const res = await fetch(`${DEXSCREENER}/token-boosts/top/v1`);
+  const data = await res.json();
+  const bscTokens = data
+    .filter(t => t.chainId === 'bsc' && t.tokenAddress)
+    .slice(0, limit * 2); // fetch more, filter down
+
+  // Enrich with pair data for full metrics
+  const enriched = await Promise.all(
+    bscTokens.map(t => enrichDexToken(t, 'bsc'))
+  );
+  return enriched.filter(Boolean).slice(0, limit);
+}
+
+// ── Base ─────────────────────────────────────────────────────────
+export async function fetchBaseTrending(limit = 5) {
+  const res = await fetch(`${DEXSCREENER}/token-boosts/top/v1`);
+  const data = await res.json();
+  const baseTokens = data
+    .filter(t => t.chainId === 'base' && t.tokenAddress)
+    .slice(0, limit * 2);
+
+  const enriched = await Promise.all(
+    baseTokens.map(t => enrichDexToken(t, 'base'))
+  );
+  return enriched.filter(Boolean).slice(0, limit);
+}
+
+// ── DexScreener pair enrichment ──────────────────────────────────
+async function enrichDexToken(boostEntry, chainId) {
+  try {
+    const res = await fetch(
+      `${DEXSCREENER}/latest/dex/tokens/${boostEntry.tokenAddress}`
+    );
+    const data = await res.json();
+    const pair = data.pairs?.[0];
+    if (!pair) return null;
+
+    return normalizeDexToken(pair, chainId, boostEntry.icon);
+  } catch {
+    return null;
+  }
+}
+UNIFIED NORMALIZER
+Both sources produce different shapes. The normalizer turns everything into one schema:
+
+javascript
+// server/chains/normalizer.js
+
+// ── Pump.fun → UnifiedCoin ───────────────────────────────────────
+function normalizePumpFunCoin(coin) {
+  return {
+    // Identity
+    unique_id:      `solana_${coin.mint}`,
+    chain:          'solana',
+    mint_address:   coin.mint,
+    display_name:   coin.symbol,
+    full_name:      coin.name,
+    image_uri:      coin.image_uri,
+
+    // Metrics (normalized to common units)
+    market_cap_usd: coin.usd_market_cap,
+    volume_24h_usd: coin.volume || 0,
+    holder_count:   null,            // pump.fun doesn't expose this
+    age_seconds:    Date.now()/1000 - coin.created_timestamp,
+    price_usd:      null,
+    is_king:        !!coin.king_of_the_hill_timestamp,
+    graduated:      coin.complete,
+  };
+}
+
+// ── DexScreener pair → UnifiedCoin ──────────────────────────────
+function normalizeDexToken(pair, chainId, iconUrl) {
+  const ageSeconds = pair.pairCreatedAt
+    ? (Date.now() - pair.pairCreatedAt) / 1000
+    : 86400;                         // default 1 day if unknown
+
+  return {
+    unique_id:      `${chainId}_${pair.baseToken.address}`,
+    chain:          chainId,
+    mint_address:   pair.baseToken.address,
+    display_name:   pair.baseToken.symbol,
+    full_name:      pair.baseToken.name,
+    image_uri:      iconUrl || pair.info?.imageUrl || null,
+
+    market_cap_usd: pair.marketCap || 0,
+    volume_24h_usd: pair.volume?.h24 || 0,
+    holder_count:   null,            // not in pair data
+    age_seconds:    ageSeconds,
+    price_usd:      parseFloat(pair.priceUsd) || 0,
+    is_king:        false,           // chain-specific concept
+    graduated:      true,            // DEX-listed = graduated
+  };
+}
+FIGHTER GENERATOR (Chain-Aware)
+javascript
+// server/chains/fighterGenerator.js
+
+function normalize(val, min, max) {
+  return Math.min(100, Math.max(0, ((val - min) / (max - min)) * 100));
+}
+
+export function generateCrossChainFighterProfile(coin) {
+  const ageHours = coin.age_seconds / 3600;
+
+  const traits = {
+    aggression:   normalize(coin.market_cap_usd,  0, 5_000_000) * 100,
+    defense:      normalize(ageHours,              0, 168) * 100,  // 1 week = max defense
+    intelligence: normalize(ageHours,              0, 72)  * 100,  // survival = smart
+    speed:        normalize(coin.volume_24h_usd,   0, 2_000_000) * 100,
+    luck:         coin.is_king ? 88 : normalize(Math.random(), 0, 1) * 50 + 20,
+  };
+
+  const hp = 80 + normalize(coin.market_cap_usd, 0, 5_000_000) * 120;
+
+  // Chain personality modifiers
+  // Each chain has a meta flavor baked in
+  const chainModifiers = {
+    solana: { speed: +15, luck: +10 },       // Solana = fast + volatile
+    bsc:    { defense: +10, aggression: +8 }, // BSC = older, more established memes
+    base:   { intelligence: +12 },            // Base = newer, builder community
+  };
+
+  const mods = chainModifiers[coin.chain] || {};
+  Object.keys(mods).forEach(k => {
+    traits[k] = Math.min(100, traits[k] + mods[k]);
+  });
+
+  return {
+    unique_id:       coin.unique_id,
+    chain:           coin.chain,
+    source:          'TRENDING',
+    display_name:    coin.display_name,
+    full_name:       coin.full_name,
+    image_uri:       coin.image_uri,
+    processed_avatar: null,          // filled by image pipeline
+
+    // Combat profile
+    aggression:      Math.round(traits.aggression),
+    defense:         Math.round(traits.defense),
+    intelligence:    Math.round(traits.intelligence),
+    speed:           Math.round(traits.speed),
+    luck:            Math.round(traits.luck),
+    hp:              Math.round(hp),
+
+    // Arena metadata
+    arena_status:   'active',
+    effective_tier: 'none',
+    is_king:        coin.is_king,
+    admin_tier:     coin.is_king ? 'D_LEGENDARY' : 'B_STANDARD',
+
+    // Source metrics (stored for leaderboard display)
+    market_cap_usd: coin.market_cap_usd,
+    volume_24h_usd: coin.volume_24h_usd,
+    last_refreshed: new Date().toISOString(),
+  };
+}
+MATCHING ENGINE
+The most important part — how fighters get paired:
+
+javascript
+// server/arena/matchingEngine.js
+
+// ── ECPS formula ─────────────────────────────────────────────────
+function calculateECPS(fighter) {
+  return (
+    fighter.aggression   * 0.30 +
+    fighter.defense      * 0.20 +
+    fighter.speed        * 0.20 +
+    fighter.intelligence * 0.20 +
+    fighter.luck         * 0.10
+  );
+}
+
+// ── Match type priorities ─────────────────────────────────────────
+/*
+  1. CHAIN RIVALRY    — SOL vs BSC, BSC vs BASE, SOL vs BASE (most drama)
+  2. KING CLASH       — any two is_king fighters (premium event)
+  3. ECPS-BALANCED    — same chain, similar power score
+  4. RANDOM FILL      — anything vs anything (fallback if pool is thin)
+*/
+
+export function buildMatchQueue(activeFighters) {
+  const queue = [];
+  const available = [...activeFighters];   // copy so we can splice
+  const matched   = new Set();
+
+  // ── Pass 1: King clashes ─────────────────────────────────────
+  const kings = available.filter(f => f.is_king);
+  if (kings.length >= 2) {
+    for (let i = 0; i < kings.length - 1; i += 2) {
+      queue.push(createMatch(kings[i], kings[i+1], 'KING_CLASH'));
+      matched.add(kings[i].unique_id);
+      matched.add(kings[i+1].unique_id);
+    }
+  }
+
+  const remaining = available.filter(f => !matched.has(f.unique_id));
+
+  // ── Pass 2: Cross-chain rivalry pairs ────────────────────────
+  const byChain = {
+    solana: remaining.filter(f => f.chain === 'solana'),
+    bsc:    remaining.filter(f => f.chain === 'bsc'),
+    base:   remaining.filter(f => f.chain === 'base'),
+  };
+
+  const rivalryPairs = [
+    [byChain.solana, byChain.bsc,  'SOL_VS_BSC'],
+    [byChain.bsc,   byChain.base,  'BSC_VS_BASE'],
+    [byChain.solana, byChain.base, 'SOL_VS_BASE'],
+  ];
+
+  for (const [poolA, poolB, matchType] of rivalryPairs) {
+    const unusedA = poolA.filter(f => !matched.has(f.unique_id));
+    const unusedB = poolB.filter(f => !matched.has(f.unique_id));
+
+    // Pair closest ECPS across chains
+    for (const a of unusedA) {
+      if (matched.has(a.unique_id)) continue;
+      const ecpsA = calculateECPS(a);
+
+      const opponent = unusedB
+        .filter(b => !matched.has(b.unique_id))
+        .sort((x, y) =>
+          Math.abs(calculateECPS(x) - ecpsA) -
+          Math.abs(calculateECPS(y) - ecpsA)
+        )[0];
+
+      if (!opponent) continue;
+
+      const ecpsDiff = Math.abs(calculateECPS(opponent) - ecpsA);
+      if (ecpsDiff / ecpsA <= 0.25) {    // within 25% for cross-chain
+        queue.push(createMatch(a, opponent, matchType));
+        matched.add(a.unique_id);
+        matched.add(opponent.unique_id);
+      }
+    }
+  }
+
+  // ── Pass 3: Same-chain ECPS balanced ─────────────────────────
+  const leftover = remaining.filter(f => !matched.has(f.unique_id));
+
+  for (let i = 0; i < leftover.length; i++) {
+    const a = leftover[i];
+    if (matched.has(a.unique_id)) continue;
+    const ecpsA = calculateECPS(a);
+
+    const opponent = leftover
+      .filter((b, j) => j !== i && !matched.has(b.unique_id))
+      .sort((x, y) =>
+        Math.abs(calculateECPS(x) - ecpsA) -
+        Math.abs(calculateECPS(y) - ecpsA)
+      )[0];
+
+    if (!opponent) continue;
+
+    queue.push(createMatch(a, opponent, 'BALANCED'));
+    matched.add(a.unique_id);
+    matched.add(opponent.unique_id);
+  }
+
+  return queue;
+}
+
+function createMatch(fighterA, fighterB, matchType) {
+  return {
+    id:          `match_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+    fighter_a:   fighterA,
+    fighter_b:   fighterB,
+    match_type:  matchType,
+    created_at:  new Date().toISOString(),
+    status:      'pending',
+
+    // Display label for UI
+    label: matchTypeLabel(matchType, fighterA, fighterB),
+  };
+}
+
+function matchTypeLabel(type, a, b) {
+  const labels = {
+    KING_CLASH:  `👑 King Clash — ${a.display_name} vs ${b.display_name}`,
+    SOL_VS_BSC:  `⚔️ Chain Rivalry — SOL vs BSC`,
+    BSC_VS_BASE: `⚔️ Chain Rivalry — BSC vs BASE`,
+    SOL_VS_BASE: `⚔️ Chain Rivalry — SOL vs BASE`,
+    BALANCED:    `🥊 ${a.display_name} vs ${b.display_name}`,
+  };
+  return labels[type] || `${a.display_name} vs ${b.display_name}`;
+}
+LEADERBOARD SERVICE
+javascript
+// server/arena/leaderboardService.js
+
+// Called immediately after every battle resolves
+export async function updateLeaderboard(battleResult) {
+  const { winner, loser, match_type, bc_earned, usdt_earned } = battleResult;
+
+  // ── Update winner ────────────────────────────────────────────
+  await db.execute(`
+    UPDATE trending_fighter_stats SET
+      wins            = wins + 1,
+      total_bc_earned = total_bc_earned + $1,
+      win_streak      = win_streak + 1,
+      last_fought_at  = NOW()
+    WHERE fighter_unique_id = $2
+  `, [bc_earned, winner.unique_id]);
+
+  // ── Update loser ─────────────────────────────────────────────
+  await db.execute(`
+    UPDATE trending_fighter_stats SET
+      losses          = losses + 1,
+      win_streak      = 0,
+      last_fought_at  = NOW()
+    WHERE fighter_unique_id = $1
+  `, [loser.unique_id]);
+
+  // ── Recalculate global rank ───────────────────────────────────
+  // Rank = weighted: 50% wins, 30% win_streak, 20% bc_earned
+  await db.execute(`
+    UPDATE trending_fighter_stats SET
+      global_rank = sub.rank
+    FROM (
+      SELECT fighter_unique_id,
+             RANK() OVER (
+               ORDER BY (wins * 0.5 + win_streak * 0.3 + total_bc_earned * 0.2) DESC
+             ) AS rank
+      FROM trending_fighter_stats
+    ) sub
+    WHERE trending_fighter_stats.fighter_unique_id = sub.fighter_unique_id
+  `);
+
+  // ── Recalculate per-chain rank ────────────────────────────────
+  for (const chain of ['solana', 'bsc', 'base']) {
+    await db.execute(`
+      UPDATE trending_fighter_stats SET
+        chain_rank = sub.rank
+      FROM (
+        SELECT fighter_unique_id,
+               RANK() OVER (ORDER BY wins DESC) AS rank
+        FROM trending_fighter_stats
+        WHERE chain = $1
+      ) sub
+      WHERE trending_fighter_stats.fighter_unique_id = sub.fighter_unique_id
+      AND trending_fighter_stats.chain = $1
+    `, [chain]);
+  }
+
+  // ── Cross-chain champion badge ────────────────────────────────
+  // If winner has won against 2+ different chains, gets cross-chain badge
+  const distinctChainsBeaten = await db.query(`
+    SELECT COUNT(DISTINCT loser_chain) as chains
+    FROM battle_results
+    WHERE winner_id = $1
+  `, [winner.unique_id]);
+
+  if (distinctChainsBeaten[0].chains >= 2) {
+    await db.execute(`
+      UPDATE trending_fighter_stats
+      SET badges = array_append(badges, 'CHAIN_BREAKER')
+      WHERE fighter_unique_id = $1
+      AND NOT ('CHAIN_BREAKER' = ANY(badges))
+    `, [winner.unique_id]);
+  }
+}
+LEADERBOARD PAGE DATA
+javascript
+// GET /api/leaderboard/trending
+
+export async function getTrendingLeaderboard(chain = 'all', limit = 20) {
+  const chainFilter = chain === 'all' ? '' : `WHERE chain = '${chain}'`;
+
+  return db.query(`
+    SELECT
+      f.unique_id,
+      f.display_name,
+      f.full_name,
+      f.chain,
+      f.processed_avatar,
+      f.market_cap_usd,
+      f.is_king,
+      s.wins,
+      s.losses,
+      s.win_streak,
+      s.total_bc_earned,
+      s.global_rank,
+      s.chain_rank,
+      s.badges,
+      s.last_fought_at,
+      ROUND(s.wins::numeric / NULLIF(s.wins + s.losses, 0) * 100, 1) AS win_rate_pct
+    FROM trending_fighter_stats s
+    JOIN trending_fighter_profiles f ON f.unique_id = s.fighter_unique_id
+    ${chainFilter}
+    ORDER BY s.global_rank ASC
+    LIMIT $1
+  `, [limit]);
+}
+Leaderboard response shape:
+
+javascript
+[
+  {
+    unique_id:      "solana_AbCd...",
+    display_name:   "BONK",
+    full_name:      "BONK on SOL",
+    chain:          "solana",
+    processed_avatar: "https://...",
+    market_cap_usd: 420000,
+    is_king:        true,
+    wins:           14,
+    losses:         3,
+    win_streak:     4,
+    total_bc_earned: 2800,
+    global_rank:    1,
+    chain_rank:     1,
+    badges:         ["CHAIN_BREAKER", "KING"],
+    win_rate_pct:   82.4,
+    last_fought_at: "2026-07-06T14:22:00Z"
+  },
+  ...
+]
+FIGHTER LIST PAGE DATA
+javascript
+// GET /api/fighters/trending?chain=all&sort=rank&status=active
+
+export async function getTrendingFighterList({ chain, sort, status, limit = 30 }) {
+  const chainFilter  = chain  !== 'all' ? `AND f.chain = '${chain}'`   : '';
+  const statusFilter = status !== 'all' ? `AND f.arena_status = '${status}'` : '';
+
+  const sortOptions = {
+    rank:       's.global_rank ASC',
+    mcap:       'f.market_cap_usd DESC',
+    wins:       's.wins DESC',
+    streak:     's.win_streak DESC',
+    recent:     's.last_fought_at DESC',
+  };
+  const orderBy = sortOptions[sort] || sortOptions.rank;
+
+  return db.query(`
+    SELECT
+      f.unique_id,
+      f.chain,
+      f.display_name,
+      f.processed_avatar,
+      f.arena_status,
+      f.is_king,
+      f.admin_tier,
+      f.market_cap_usd,
+      f.aggression,
+      f.defense,
+      f.intelligence,
+      f.speed,
+      f.luck,
+      f.hp,
+      s.wins,
+      s.losses,
+      s.win_streak,
+      s.global_rank,
+      s.chain_rank,
+      s.badges
+    FROM trending_fighter_profiles f
+    LEFT JOIN trending_fighter_stats s ON s.fighter_unique_id = f.unique_id
+    WHERE 1=1 ${chainFilter} ${statusFilter}
+    ORDER BY ${orderBy}
+    LIMIT $1
+  `, [limit]);
+}
+DB SCHEMA
+sql
+-- Fighter profiles (one row per unique coin)
+CREATE TABLE trending_fighter_profiles (
+  unique_id          TEXT PRIMARY KEY,          -- e.g. "solana_AbCd..."
+  chain              TEXT NOT NULL,             -- solana | bsc | base
+  display_name       TEXT NOT NULL,             -- symbol
+  full_name          TEXT,
+  image_uri          TEXT,                      -- raw logo URL
+  processed_avatar   TEXT,                      -- circular-cropped version
+  arena_status       TEXT DEFAULT 'active',     -- active | retired
+  admin_tier         TEXT DEFAULT 'B_STANDARD', -- for simulator seeding tier
+  is_king            BOOLEAN DEFAULT FALSE,
+  market_cap_usd     NUMERIC DEFAULT 0,
+  volume_24h_usd     NUMERIC DEFAULT 0,
+  aggression         INT, defense INT, intelligence INT, speed INT, luck INT, hp INT,
+  last_refreshed     TIMESTAMP DEFAULT NOW()
+);
+
+-- Rolling stats (updated after every fight)
+CREATE TABLE trending_fighter_stats (
+  fighter_unique_id  TEXT PRIMARY KEY REFERENCES trending_fighter_profiles(unique_id),
+  chain              TEXT NOT NULL,
+  wins               INT DEFAULT 0,
+  losses             INT DEFAULT 0,
+  win_streak         INT DEFAULT 0,
+  total_bc_earned    INT DEFAULT 0,
+  global_rank        INT,
+  chain_rank         INT,
+  badges             TEXT[] DEFAULT '{}',
+  last_fought_at     TIMESTAMP
+);
+
+-- Battle history
+CREATE TABLE trending_battle_results (
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_id           TEXT NOT NULL,
+  match_type         TEXT NOT NULL,           -- KING_CLASH | SOL_VS_BSC | etc
+  winner_id          TEXT REFERENCES trending_fighter_profiles(unique_id),
+  loser_id           TEXT REFERENCES trending_fighter_profiles(unique_id),
+  winner_chain       TEXT,
+  loser_chain        TEXT,
+  winner_hp_remaining INT,
+  rounds_fought      INT,
+  bc_pool            INT,
+  created_at         TIMESTAMP DEFAULT NOW()
+);
+THE REFRESH ORCHESTRATOR
+Single entry point that ties everything together on Replit:
+
+javascript
+// server/arena/trendingOrchestrator.js
+
+import { fetchSolanaTrending, fetchBSCTrending, fetchBaseTrending } from '../chains/fetchers.js';
+import { generateCrossChainFighterProfile } from '../chains/fighterGenerator.js';
+import { processCoinLogo }                   from '../chains/imagePipeline.js';
+import { buildMatchQueue }                   from './matchingEngine.js';
+import { runBattle }                          from './battleEngine.js';
+import { updateLeaderboard }                  from './leaderboardService.js';
+
+const REFRESH_MS = 5 * 60 * 1000;
+
+async function refreshCycle() {
+  console.log('[Trending] Refresh cycle started');
+
+  // 1. Fetch all chains in parallel
+  const [solana, bsc, base] = await Promise.allSettled([
+    fetchSolanaTrending(6),
+    fetchBSCTrending(5),
+    fetchBaseTrending(5),
+  ]);
+
+  const allCoins = [
+    ...(solana.status === 'fulfilled' ? solana.value : []),
+    ...(bsc.status    === 'fulfilled' ? bsc.value    : []),
+    ...(base.status   === 'fulfilled' ? base.value   : []),
+  ];
+
+  // 2. Generate + upsert fighter profiles
+  const fighters = [];
+  for (const coin of allCoins) {
+    const profile = generateCrossChainFighterProfile(coin);
+    const avatar  = await processCoinLogo(coin.image_uri);
+    profile.processed_avatar = avatar;
+    await upsertFighterProfile(profile);
+    fighters.push(profile);
+  }
+
+  // 3. Build match queue
+  const matchQueue = buildMatchQueue(fighters);
+  console.log(`[Trending] ${matchQueue.length} matches queued`);
+
+  // 4. Simulate all matches
+  for (const match of matchQueue) {
+    const result = await runBattle(match.fighter_a, match.fighter_b, match.match_type);
+    await updateLeaderboard(result);
+    await saveBattleResult(result);
+
+    // Emit real-time update to connected clients
+    io.emit('battle:result', {
+      match_type:  match.match_type,
+      label:       match.label,
+      winner_name: result.winner.display_name,
+      winner_chain: result.winner.chain,
+      loser_name:  result.loser.display_name,
+      loser_chain: result.loser.chain,
+      rounds:      result.rounds_fought,
+    });
+  }
+
+  // 5. Emit leaderboard update signal
+  io.emit('leaderboard:updated');
+
+  console.log('[Trending] Refresh cycle complete');
+}
+
+// Boot + schedule
+refreshCycle();
+setInterval(refreshCycle, REFRESH_MS);
+API SURFACE
+GET  /api/fighters/trending              → Fighter list (all chains)
+GET  /api/fighters/trending?chain=solana → Solana only
+GET  /api/fighters/trending?chain=bsc    → BSC only
+GET  /api/fighters/trending?chain=base   → Base only
+GET  /api/fighters/trending?sort=streak  → By win streak
+
+GET  /api/leaderboard/trending           → Global leaderboard
+GET  /api/leaderboard/trending?chain=bsc → Chain leaderboard
+GET  /api/leaderboard/trending?scope=crosschain → Cross-chain winners only
+
+GET  /api/battles/live                   → Currently active matches
+GET  /api/battles/recent?limit=20        → Recent results feed
+
+WS   /socket (Socket.io)
+     Events: battle:result, leaderboard:updated, fighter:retired, fighter:added
+HOW LEADERBOARD + FIGHTER LIST STAY LIVE
+Socket.io emits 'leaderboard:updated' after every refresh cycle
+        ↓
+Frontend listens, calls GET /api/leaderboard/trending
+        ↓
+Leaderboard re-renders with new ranks, streaks, badges
+
+Same socket emits 'battle:result' per fight as it completes
+        ↓
+Live battle feed at the bottom of both pages updates
+        ↓
+Chain tabs on fighter list show updated win/loss counts
+        ↓
+Users watching see real-time ranking shifts
+REPLIT SETUP CHECKLIST
+npm install sharp node-fetch socket.io
+
+Replit Secrets:
+  CLOUDINARY_CLOUD_NAME  (optional, for avatar storage)
+  CLOUDINARY_API_KEY
+  CLOUDINARY_API_SECRET
+
+index.js / server.js:
+  import './server/arena/trendingOrchestrator.js';
+  // This one import starts everything
+Want me to write the complete production-ready version of any single file, or the Socket.io real-time integration for the leaderboard + fighter list pages?

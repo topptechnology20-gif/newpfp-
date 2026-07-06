@@ -2,8 +2,18 @@ import http.server
 import socketserver
 import os
 import json
+import threading
+import time
 from datetime import datetime, timezone
 from urllib.parse import urlparse, parse_qs
+
+# Import trending engine (starts background refresh thread)
+try:
+    import trending_engine as _te
+    _HAS_TRENDING = True
+except Exception as _te_err:
+    print(f"[serve.py] trending_engine import failed: {_te_err}", flush=True)
+    _HAS_TRENDING = False
 
 try:
     import psycopg2
@@ -208,6 +218,69 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                              "fameScore": float(r[5] or 0)} for r in rows]
             self.send_json(fighters)
             return
+        # ── PumpFighters Engine endpoints ──────────────────────────────────
+        if path == "/api/pumpfighters/state":
+            if _HAS_TRENDING:
+                s = _te.get_state()
+                # Sanitise: make datetime objects JSON-safe
+                def _clean(obj):
+                    if isinstance(obj, dict):
+                        return {k: _clean(v) for k, v in obj.items()}
+                    if isinstance(obj, list):
+                        return [_clean(i) for i in obj]
+                    if hasattr(obj, "isoformat"):
+                        return obj.isoformat()
+                    return obj
+                self.send_json(_clean(s))
+            else:
+                self.send_json({"fighters": [], "live_match": None,
+                                "recent_battles": [], "last_refreshed": None,
+                                "error": "engine not available"})
+            return
+
+        if path == "/api/pumpfighters/leaderboard":
+            qs = parse_qs(urlparse(self.path).query)
+            chain = (qs.get("chain") or ["all"])[0]
+            limit = int((qs.get("limit") or ["30"])[0])
+            if _HAS_TRENDING:
+                rows = _te.get_leaderboard(chain=chain, limit=limit)
+                def _clean_row(r):
+                    out = {}
+                    for k, v in r.items():
+                        if hasattr(v, "isoformat"):
+                            out[k] = v.isoformat()
+                        elif isinstance(v, (list, set)):
+                            out[k] = list(v)
+                        else:
+                            out[k] = v
+                    return out
+                self.send_json([_clean_row(r) for r in rows])
+            else:
+                self.send_json([])
+            return
+
+        if path == "/api/pumpfighters/recent-battles":
+            limit = int((parse_qs(urlparse(self.path).query).get("limit") or ["20"])[0])
+            if _HAS_TRENDING:
+                rows = _te.get_recent_battles(limit=limit)
+                def _clean_battle(r):
+                    out = {}
+                    for k, v in r.items():
+                        out[k] = v.isoformat() if hasattr(v, "isoformat") else v
+                    return out
+                self.send_json([_clean_battle(r) for r in rows])
+            else:
+                self.send_json([])
+            return
+
+        if path == "/api/pumpfighters/trigger-refresh":
+            if _HAS_TRENDING:
+                threading.Thread(target=_te._refresh_cycle, daemon=True).start()
+                self.send_json({"ok": True, "message": "Refresh triggered"})
+            else:
+                self.send_json({"ok": False, "message": "engine not available"})
+            return
+
         if path in {"/", ""}:
             try:
                 with open(INDEX_PATH, "r", encoding="utf-8") as f:
@@ -310,12 +383,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-class Server(socketserver.TCPServer):
+class Server(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
+    daemon_threads = True
 
     def handle_error(self, request, client_address):
         pass
 
+
+# ── Boot trending engine ───────────────────────────────────────────────────
+if _HAS_TRENDING:
+    def _boot_engine():
+        time.sleep(2)
+        try:
+            _te.ensure_tables()
+            _te.start_background_refresh()
+        except Exception as e:
+            print(f"[serve.py] Engine boot error: {e}", flush=True)
+    threading.Thread(target=_boot_engine, daemon=True, name="EngineBootstrap").start()
 
 with Server(("0.0.0.0", PORT), Handler) as httpd:
     print(f"Serving at http://0.0.0.0:{PORT}", flush=True)
