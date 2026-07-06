@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 PORT = 5000
 GAME_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "game")
 INDEX_PATH = os.path.join(GAME_DIR, "newpfp", "index.html")
+PRIVY_APP_ID = os.environ.get("PRIVY_APP_ID", "")
 STATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_state.json")
 
 DEFAULT_PROFILE = {
@@ -122,13 +123,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         if path in {"/", ""}:
             try:
-                with open(INDEX_PATH, "rb") as f:
+                with open(INDEX_PATH, "r", encoding="utf-8") as f:
                     content = f.read()
+                content = content.replace("'__PRIVY_APP_ID__'", f"'{PRIVY_APP_ID}'")
+                body = content.encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Content-Length", str(len(content)))
+                self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
-                self.wfile.write(content)
+                self.wfile.write(body)
             except (BrokenPipeError, ConnectionResetError):
                 pass
             return
