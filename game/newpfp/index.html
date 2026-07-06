@@ -938,8 +938,8 @@
         <div id="notif-list"></div>
       </div>
     </div>
-    <button class="icon-btn" onclick="openProfileView()" title="Open profile" aria-label="Open profile">👤</button>
-    <button class="login-btn" id="auth-btn" onclick="window.openPrivyAuthModal ? window.openPrivyAuthModal() : openProfileView()">LOGIN</button>
+    <button class="icon-btn" id="profile-icon-btn" onclick="openProfileView()" title="Open profile" aria-label="Open profile" style="display:none">👤</button>
+    <button class="login-btn" id="auth-btn" onclick="window.openPrivyAuthModal ? window.openPrivyAuthModal() : null">LOGIN</button>
     <div id="auth-button-host" style="display:none"></div>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
   </div>
@@ -1535,23 +1535,34 @@
         privyLoginHandler = login;
       }, [login]);
 
-      const label = !ready ? 'LOADING…' : authenticated ? 'DASHBOARD' : 'LOGIN';
-      const disabled = !ready || authenticated;
+      // Sync the real nav button and profile icon to auth state
+      React.useEffect(() => {
+        const btn = document.getElementById('auth-btn');
+        const profileIcon = document.getElementById('profile-icon-btn');
+        if (!btn) return;
 
-      return React.createElement('button', {
-        className: 'login-btn',
-        style: { display: 'none' },
-        disabled,
-        onClick: () => {
-          if (authenticated) {
-            openProfileView();
-            return;
-          }
-          login({
-            loginMethods: ['wallet', 'email', 'google', 'twitter', 'discord', 'github', 'passkey'],
-          });
-        },
-      }, label);
+        if (!ready) {
+          btn.textContent = 'LOADING…';
+          btn.disabled = true;
+          if (profileIcon) profileIcon.style.display = 'none';
+          return;
+        }
+
+        if (authenticated) {
+          btn.textContent = 'DASHBOARD';
+          btn.disabled = false;
+          btn.onclick = () => openProfileView();
+          if (profileIcon) profileIcon.style.display = '';
+        } else {
+          btn.textContent = 'LOGIN';
+          btn.disabled = false;
+          btn.onclick = () => window.openPrivyAuthModal ? window.openPrivyAuthModal() : null;
+          if (profileIcon) profileIcon.style.display = 'none';
+        }
+      }, [ready, authenticated]);
+
+      // This component only manages state; the visible button is in the real DOM
+      return null;
     }
 
     function PrivyAuthShell() {
